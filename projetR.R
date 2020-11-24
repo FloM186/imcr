@@ -11,13 +11,14 @@
 # V de Cramer	/ Valeur test h
 # Tableaux + graphiques des profils /	Valeur test phi
 
+library(tidyverse)
+library(magrittr)
+
+#data test
 iris <- read.csv("C:/Users/moret/Downloads/_documents/GitHub/projetR/dataset test/iris_data.csv")
 View(iris_data)
 auto <- read.csv("C:/Users/moret/Downloads/_documents/GitHub/projetR/dataset test/auto-mpg.csv")
 View(auto.mpg)
-
-library(tidyverse)
-library(magrittr)
 
 str(auto)
 str(iris)
@@ -25,7 +26,8 @@ str(iris)
 iris <- iris %>% mutate(species = factor(species))
 auto <- auto %>% mutate(origin = factor(origin), cyl = factor(cyl))
 
-
+#cramersV
+#https://www.rdocumentation.org/packages/rcompanion/versions/2.3.25/topics/cramerV
 
 
 
