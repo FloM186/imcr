@@ -1,6 +1,6 @@
 #############    References + texte ####
 # https://medium.com/analytics-vidhya/a-fresh-start-for-r-in-vscode-ec61ed108cf6
-#Univarié : V de cramer, tableau des profils, taille d'effet
+#Univarié quanti : V de cramer, tableau des profils, taille d'effet
 #Univarié qualitatif
 # Caractérisation partition /	Caractérisations groupes
 # V de Cramer	/ Valeur test h
@@ -62,7 +62,7 @@ head(df2)
 # names(df)[6] <- "cluster"
 
 ########## qualitatif
-# test acp acm ricco
+#s test acp acm ricco
 # Réduction de dimension en utilisant l'ACP
 res.pca <- prcomp(df[, -5],  scale = TRUE)
 # Coordonnées des individus
@@ -81,7 +81,7 @@ head(eigenvalue)
 
 
 #############   UNIVARIE   ################
-#quantitatif
+##########quantitatif
 ## Loading required package: Ckmeans.1d.dp
 #https://cran.r-project.org/web/packages/Ckmeans.1d.dp/vignettes/Ckmeans.1d.dp.html
 #https://www.rdocumentation.org/packages/Ckmeans.1d.dp/versions/4.3.3/topics/Univariate%20Clustering
@@ -104,7 +104,7 @@ str(df1)
 
 
 
-
+########## qualitatif
 
 
 #############   test Clvalid##########
