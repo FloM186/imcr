@@ -1,10 +1,25 @@
 #install.packages(fmsb)
 library(fmsb)
-devtools::install_github("ricardo-bion/ggradar", dependencies = TRUE)
+
 data(hdv2003)
 X=hdv2003
 
 classe=sample(c(1,2,3),2000,replace=T)
+
+#"constructeur" pour classe S3
+correler <- function(class,var){
+  #création de l'instance
+  instance <- list()
+  instance$tab <- table(class,var)
+  instance$v.cramer <- v.cramer(class, var)
+  instance$l.profil <- l.profil(class,var)
+  instance$c.profil <- c.profil(class,var)
+  instance$h <- h.value.test(instance$tab)
+  class(instance) <- "univariate qualitative"
+  return(instance)
+}
+
+
 
 v.cramer <- function(classe, var){
   #Teste si les variables sont sous forme de data.frame
@@ -48,6 +63,10 @@ v.cramer <- function(classe, var){
 l.profil <- function(classe, var, digits=1){
   tab=table(classe,var)
   name = names(dimnames(tab))
+  
+  print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=var, y=Freq, fill=classe)) +
+          geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot by variables according to class"))
+  
   tab=rbind(tab,Ensemble = apply(tab,2,sum))
   tab = round(prop.table(tab,1)*100,digits)
   tab=cbind(tab, Total = apply(tab,2,sum))
@@ -60,6 +79,10 @@ l.profil <- function(classe, var, digits=1){
 c.profil <- function(classe, var,digits=1){
   tab=table(classe,var)
   name = names(dimnames(tab))
+  
+  print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=var, y=Freq, fill=classe)) +
+          geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot by variables according to class"))
+  
   tab=cbind(tab,Ensemble = apply(tab,1,sum))
   tab = round(prop.table(tab,2)*100,digits)
   tab=rbind(tab, Total = apply(tab,2,sum))
@@ -69,5 +92,21 @@ c.profil <- function(classe, var,digits=1){
 }
 
 
+h.value.test <- function(tab, indice.tab.modalite = 1, indice.tab.group = 1){
+  tab = cbind(tab,apply(tab,1,sum))
+  phi.lg = 2*asin(sqrt(tab[indice.tab.group,indice.tab.modalite]/tab[indice.tab.group,ncol(tab)]))
+  phi.la = 2*asin(sqrt( (sum(tab[,indice.tab.modalite])-tab[indice.tab.group,indice.tab.modalite]) / (sum(tab[,ncol(tab)])-tab[indice.tab.group,ncol(tab)]) ))
+  h = phi.lg - phi.la
+  h = abs(h)
+  print(ggplot() +
+    geom_hline(aes(yintercept = 0.2,color = "small"),linetype = 2)+
+    geom_hline(aes(yintercept = 0.5,colour = "medium"),linetype = 2)+
+    geom_hline(aes(yintercept = 0.8,colour = "large"),linetype = 2)+
+    geom_hline(aes(yintercept = h ,colour = "h"),linetype = 1)+
+    ggtitle("h according to statistical significance"))
+  return(h)
+}
+
+h.value.test(tab)
 
 
