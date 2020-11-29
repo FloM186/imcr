@@ -97,16 +97,36 @@ h.value.test <- function(tab, indice.tab.modalite = 1, indice.tab.group = 1){
   phi.lg = 2*asin(sqrt(tab[indice.tab.group,indice.tab.modalite]/tab[indice.tab.group,ncol(tab)]))
   phi.la = 2*asin(sqrt( (sum(tab[,indice.tab.modalite])-tab[indice.tab.group,indice.tab.modalite]) / (sum(tab[,ncol(tab)])-tab[indice.tab.group,ncol(tab)]) ))
   h = phi.lg - phi.la
-  h = abs(h)
+  h2 = abs(h)
   print(ggplot() +
-    geom_hline(aes(yintercept = 0.2,color = "small"),linetype = 2)+
-    geom_hline(aes(yintercept = 0.5,colour = "medium"),linetype = 2)+
-    geom_hline(aes(yintercept = 0.8,colour = "large"),linetype = 2)+
-    geom_hline(aes(yintercept = h ,colour = "h"),linetype = 1)+
+    geom_hline(aes(yintercept = 0.2,color = "small absolute value"),linetype = 1, size=1.5)+
+    geom_hline(aes(yintercept = 0.5,colour = "medium absolute value"),linetype = 1, size=1.5)+
+    geom_hline(aes(yintercept = 0.8,colour = "large absolute value"),linetype = 1, size=1.5)+
+    geom_hline(aes(yintercept = h2 ,colour = "h absolute value"),linetype = 2, size=2)+
     ggtitle("h according to statistical significance"))
   return(h)
 }
 
-h.value.test(tab)
-
+phi.value.test <- function(tab){
+  if(ncol(tab) != 2 && nrow(tab) != 2){
+    stop("Table must be 2x2")
+  }
+  khi = chisq.test(tab)$statistic
+  n = sum(tab)
+  phi = as.numeric(sqrt(khi/n))
+  signe = h.value.test(tab)
+  if(sign(signe) == -1){
+    phi = -phi
+  }
+  phi2 = abs(phi)
+  print(ggplot() +
+          geom_hline(aes(yintercept = 0.1,color = "small absolute value"),linetype = 1, size=1.5)+
+          geom_hline(aes(yintercept = 0.3,colour = "medium absolute value"),linetype = 1, size=1.5)+
+          geom_hline(aes(yintercept = 0.5,colour = "large absolute value"),linetype = 1, size=1.5)+
+          geom_hline(aes(yintercept = phi2 ,colour = "phi absolute value"),linetype = 2, size=2)+
+          ggtitle("phi according to statistical significance"))
+  return(phi)
+}
+  
+phi.value.test(tab)
 
