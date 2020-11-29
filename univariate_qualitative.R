@@ -1,6 +1,7 @@
 #install.packages(fmsb)
 library(fmsb)
-
+library(questionr)
+library(ggplot2)
 data(hdv2003)
 X=hdv2003
 
@@ -15,6 +16,7 @@ correler <- function(class,var){
   instance$l.profil <- l.profil(class,var)
   instance$c.profil <- c.profil(class,var)
   instance$h <- h.value.test(instance$tab)
+  instance$phi <- phi.value.test(instance$tab)
   class(instance) <- "univariate qualitative"
   return(instance)
 }
