@@ -415,8 +415,13 @@ effect_size <- function(active_variables, clusters) {
     #U1   (2u2 - 2 / u2)
     u1 <- ((2*u2) -1)/u2
     
+    print(list("Cohen's d",
+               es_d, "Hedge's g", es_g, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1))
+    
     variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: ")
-    if(variable != "") {
+    inspect_cluster <- as.character(readline("What is the number of the cluster you to inspect ? Enter a name or skip by pressing enter: "))
+    if(variable != "" & inspect_cluster!="" ) {
+      
     var_clusters <-active_variables_clusters %>% gather(key, value, -clusters) %>% filter(key==variable)
    
     df = data.frame()
@@ -459,19 +464,32 @@ effect_size <- function(active_variables, clusters) {
             panel.background = element_rect(fill = NA, color = "gray40"),
             legend.position="bottom")
     
+
+    df_clust <- data.frame(x= density(var_clusters[which(var_clusters$clusters==inspect_cluster),]$value)$x, y=density(var_clusters[which(var_clusters$clusters==inspect_cluster),]$value)$y ) %>% mutate(clusters = inspect_cluster)
+    df_clust_other <- data.frame(x= density(var_clusters[which(var_clusters$clusters!=inspect_cluster),]$value)$x, y= density(var_clusters[which(var_clusters$clusters!=inspect_cluster),]$value)$y ) %>% mutate(clusters="others")
     
-    print(ggarrange(graph_density_total, graph_density_clusters, 
-              labels = c("", ""),
-              ncol = 2))
+    graph_density_cluster_vs_other<- bind_rows(df_clust,df_clust_other) %>% ggplot(aes(x=x, y=y, color=clusters))+
+      geom_area(aes(x=x, y=y, fill=clusters),alpha=0.2)+
+      geom_line(size=0.75)+
+      scale_fill_brewer(palette="Dark2")+
+      scale_color_brewer(palette="Dark2")+
+      scale_y_continuous(expand=c(0.004,0))+
+      labs(x = "", y = "clusters selected versus others")+
+      theme_minimal(base_size = 12) +
+      theme(axis.title.y=element_text(size=rel(1.4)),
+            axis.title.x=element_text(size=rel(1.4)),
+            panel.background = element_rect(fill = NA, color = "gray40"),
+            legend.position="bottom")
+    
+    print(ggarrange(graph_density_total, graph_density_clusters, graph_density_cluster_vs_other,
+              labels = c("", "", ""),
+              ncol = 2, nrow=2))
     
     normality_test <- shapiro.test(var_clusters$value)
     
-    results <- list("Cohen's d",
-                    es_d, "Hedge's g", es_g, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1, "Displaying density and normality test of " , variable, normality_test)
-    } else {results <- list("Effect size value table",
-                            es, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1)
-    }
+    results <- list("Displaying density and normality test of " , variable, normality_test)
     return(results)
+    } else {}
   }
 }
 
