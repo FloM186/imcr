@@ -162,50 +162,58 @@ right_join(right_join(meantab %>% mutate(cluster=1:4) %>%
 #############   fonctions du projet ###########
 k=NULL
 c=NULL
-varactivegrp = NULL
-varactive = NULL
-val_test <- function(varactive, cluster, showgraph=TRUE) {
-  if(all(sapply(varactive, is.numeric))==FALSE) {
-    print("Les variables actives quantitatives doivent etre numeriques")
-  } else if (is.vector(cluster)==FALSE) {
-    print("Le clustering des observations doit etre sous forme de vecteur")
+active_variables_clusters = NULL
+active_variables = NULL
+
+val_test <- function(active_variables, clusters, show_graph=TRUE) {
+  if(all(sapply(active_variables, is.numeric))==FALSE) {
+    print("Active variables must be numeric")
+  } else if (is.vector(clusters)==FALSE) {
+    print("Clusters must be a vector")
   } else {
-    varactivegrp <- varactive %>% mutate(grp = factor(cluster))
+    active_variables_clusters <- active_variables %>% mutate(clusters = factor(clusters))
     
-    meantab <-varactivegrp %>% group_by(grp) %>%
-      summarise_if(.predicate = function(x) is.numeric(x),
-                   .funs = list(mean)) %>% select_if(function(x) is.numeric(x))
+    cluster_mean <- active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean)) %>%
+      select_if(function(x) is.numeric(x))
     
-    ntab <-varactivegrp %>% group_by(grp) %>%
-      summarise_if(.predicate = function(x) is.numeric(x),
-                   .funs = list(length))  %>% select_if(function(x) is.numeric(x))
+    cluster_n <- active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length)) %>%
+      select_if(function(x) is.numeric(x))
     
-    meanfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
+    cluster_sd <- active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+      select_if(function(x) is.numeric(x))
     
-    nfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length))
+    active_variables_mean <- active_variables %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
     
-    varfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(var))
+    active_variables_n <- active_variables %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length))
     
-    k=length(unique(cluster))
-    c = ncol(varactive)
-    vttab <- as.data.frame(matrix(ncol=c, nrow=k))
-    colnames(vttab)<- colnames(varactive)
+    active_variables_var <- active_variables %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(var))
+    
+    k = length(unique(clusters))
+    c = ncol(active_variables)
+    test_value <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(test_value)<- colnames(active_variables)
+    
     for(j in 1:k) {
       for(i in 1:c) {
-        vttab[j,i] <- as.numeric((meantab[j,i] - meanfull[,i])/sqrt(((nfull[,i] - ntab[j,i])/(nfull[,i]-1))*(varfull[,i]/ntab[j,i])))
+        test_value[j,i] <- as.numeric((cluster_mean[j,i] - active_variables_mean[,i])/sqrt(((active_variables_n[,i] - cluster_n[j,i])/(active_variables_n[,i]-1))*(active_variables_var[,i]/cluster_n[j,i])))
       }
     }
     
-    vttab <- vttab %>% mutate(cluster= 1:k) %>% select(cluster, everything())
+    test_value <- test_value %>% mutate(clusters= 1:k) %>% select(clusters, everything())
     
-    full_table<-right_join(right_join(meantab %>% mutate(cluster=1:k) %>%
-                                        gather(key, mean, -cluster),
-                                      sdtab  %>%
-                                        mutate(cluster=1:k) %>%
-                                        gather(key, sd, -cluster)),
-                           vttab %>% gather(key, vt, -cluster))
+    full_table<-right_join(
+      right_join(
+        cluster_mean %>% mutate(clusters=1:k) %>% gather(key, mean, -clusters),
+        cluster_sd  %>% mutate(clusters=1:k) %>% gather(key, sd, -clusters)
+        ), test_value %>% gather(key, vt, -clusters))
     
-    barheight<- full_table %>% group_by(key, cluster) %>% summarise(msd = mean + sd)
+    barheight <- full_table %>% group_by(key, clusters) %>% summarise(msd = mean + sd)
     
     min_axis_vt<-min(pretty(full_table$vt))
     amplitude_vt<-abs(min(pretty(full_table$vt)))+abs(max(pretty(full_table$vt)))
@@ -215,13 +223,14 @@ val_test <- function(varactive, cluster, showgraph=TRUE) {
       summarise(max1= max(msd), maxtot=round(max1+max1*(1/40))) %>% select(maxtot) %>% as.numeric()
     
     scale_second_axis<-max_axis_y/amplitude_vt
-    if(showgraph==TRUE) {
+    
+    if(show_graph==TRUE) {
       print(full_table %>%
               ggplot(aes(x=key, y=mean))+
               geom_bar(stat="identity", width=0.75, fill="deepskyblue")+
               geom_point(aes(y=(vt -min_axis_vt)*scale_second_axis ), col = 'violetred2', shape=19)+
               geom_line(aes(y=(vt -min_axis_vt)*scale_second_axis, group=1 ), size= 0.65,col = 'violetred1')+
-              scale_y_continuous(labels=pretty(barheight$msd),breaks=pretty(barheight$msd),expand = c(0.004,0), limits = c(min_axis_y,amplitude_y),
+              scale_y_continuous(labels=pretty(barheight$msd),breaks=pretty(barheight$msd),expand = c(0.004,0), limits = c(min_axis_y,max_axis_y),
                                  sec.axis = sec_axis(~./scale_second_axis +min_axis_vt, name="Test value"))+
               geom_errorbar(aes(ymax=mean + sd, ymin= mean - sd), colour="black", width=.2)+
               labs(x = "Variables", y = "Mean")+
@@ -230,27 +239,26 @@ val_test <- function(varactive, cluster, showgraph=TRUE) {
                     axis.title.y=element_text(size=rel(1.4)),
                     axis.title.x=element_text(size=rel(1.4)),
                     panel.background = element_rect(fill = NA, color = "gray40")) +
-              facet_grid(cluster ~ ., labeller = labeller("Cluster")) + facet_wrap(~ cluster, ncol=2))} else {}
+              facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))} else {}
     
     
-    
-    results <- list("Tableau des valeurs propres. Plus la valeur de la variable est elevee plus elle contribue Ã  la constitution des groupes",
-                    vttab)
+
+    results <- list("Eigenvalues table:", test_value)
     return(results)
     
   }
 }
 
 
-
+#valeurs propres :  Plus la valeur de la variable est elevee plus elle contribue a la constitution des groupes
 #test:
-val_test(fromage[,-1], groupes.cah, showgraph = TRUE)
+val_test(fromage[,-1], groupes.cah, show_graph = TRUE)
 
 
 #graph etoile/spider:
 #ne marche pas encore...
 #https://webdevdesigner.com/q/creating-radar-chart-a-k-a-star-plot-spider-plot-using-ggplot2-in-r-65407/
-full_table %>% ggplot(aes(x=key, y=vt, group=cluster, color=factor(cluster))) + 
+full_table %>% ggplot(aes(x=key, y=vt, group=clusters, color=factor(clusters))) + 
   geom_point() + 
   geom_line(size=2) + 
   xlab("Decils") + 
@@ -266,59 +274,65 @@ full_table %>% ggplot(aes(x=key, y=vt, group=cluster, color=factor(cluster))) +
 
 
 #################rapport de correlation
-rapp_corr <- function(varactive, cluster, showgraph=TRUE, show_moy_conditionnelles=TRUE) {
-  if(all(sapply(varactive, is.numeric))==FALSE) {
-    print("Les variables actives quantitatives doivent etre numeriques")
-  } else if (is.vector(cluster)==FALSE) {
-    print("Le clustering des observations doit etre sous forme de vecteur")
+rapp_corr <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) {
+  if(all(sapply(active_variables, is.numeric))==FALSE) {
+    print("Active variables must be numeric")
+  } else if (is.vector(clusters)==FALSE) {
+    print("Clusters must be a vector")
   } else {
-    varactivegrp <- varactive %>% mutate(grp = factor(cluster))
+    active_variables_clusters <- active_variables %>% mutate(clusters = factor(clusters))
     
-    meantab <-varactivegrp %>% group_by(grp) %>%
+    cluster_mean <-active_variables_clusters %>%
+      group_by(clusters) %>%
       summarise_if(.predicate = function(x) is.numeric(x),
-                   .funs = list(mean)) %>% select_if(function(x) is.numeric(x))
+                   .funs = list(mean)) %>%
+      select_if(function(x) is.numeric(x))
     
-    ntab <-varactivegrp %>% group_by(grp) %>%
+    cluster_n <-active_variables_clusters %>%
+      group_by(clusters) %>%
       summarise_if(.predicate = function(x) is.numeric(x),
-                   .funs = list(length))  %>% select_if(function(x) is.numeric(x))
+                   .funs = list(length))  %>%
+      select_if(function(x) is.numeric(x))
     
-    meanfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
+    active_variables_mean <- active_variables %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
     
-    k=length(unique(cluster))
-    c = ncol(varactive)
-    sct <-as.data.frame(matrix(nrow = nrow(varactive), ncol=c))
-    colnames(sct) = colnames(varactive)
+    k=length(unique(clusters))
+    c = ncol(active_variables)
+    
+    sct <-as.data.frame(matrix(nrow = nrow(active_variables), ncol=c))
+    colnames(sct) = colnames(active_variables)
+    
     for(i in 1:c) {
-      sct[,i] <- varactive %>% select(,i) %>% mutate_all(~ (.x - as.numeric(meanfull[i]))^2)
+      sct[,i] <- active_variables %>% select(,i) %>% mutate_all(~ (.x - as.numeric(active_variables_mean[i]))^2)
     }
     sct <-sct %>% summarise_all(sum)
     
     sce <- as.data.frame(matrix(ncol=c, nrow=k))
-    colnames(sce) = colnames(varactive)
+    colnames(sce) = colnames(active_variables)
+    
     for(j in 1:k){
       for(i in 1:ncol(fromage[,-1])) {
-        sce[j,i]<-  as.numeric(ntab[j,i]*(meantab[j,i] - meanfull[i])^2)
+        sce[j,i]<-  as.numeric(cluster_n[j,i]*(cluster_mean[j,i] - active_variables_mean[i])^2)
       }
     }
     sce <-sce %>% summarise_all(sum)
     
     rcor <- sce/sct
     
-    if(showgraph==TRUE) {
+    if(show_graph==TRUE) {
       print(rcor %>% gather(key, value) %>%
               ggplot(aes(x=key, y=value))+
               geom_bar(stat="identity", width=0.75, fill="deepskyblue")+
-              labs(x = "Variables", y = "Rapport de correlation")+
+              labs(x = "Variables", y = "Correlation coefficient")+
               scale_y_continuous(expand=c(0.004,0))+
               theme_minimal(base_size = 12) +
               theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
                     axis.title.y=element_text(size=rel(1.4)),
                     axis.title.x=element_text(size=rel(1.4)),
                     panel.background = element_rect(fill = NA, color = "gray40")))} else {}
-    if(show_moy_conditionnelles==TRUE){results <- list("Tableau des moyennes conditionnelles", meantab,
-      "Tableau des rapports de correlation. Il represente la proportion de variance expliquee par les groupes pour chaque variable. Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes",
-                                                       rcor)} else {
-                                                         results <- list("Tableau des rapports de correlation. Il represente la proportion de variance expliquee par les groupes pour chaque variable. Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes",
+    if(show_conditionnal_means==TRUE){results <- list("Conditionnal means table", cluster_mean,
+      "Correlation coefficients table", rcor)} else {
+                                                         results <- list("Conditionnal means table",
                                                                          rcor)}
     
     return(results)
@@ -327,33 +341,37 @@ rapp_corr <- function(varactive, cluster, showgraph=TRUE, show_moy_conditionnell
 #test :
 rapp_corr(fromage[,-1], groupes.cah)
 
+#tableau rapport ocrr : Il represente la proportion de variance expliquee par les groupes pour chaque variable.
+#Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes
 ################# effect size
 
 
-effect_size <- function(varactive, cluster) {
-  if(all(sapply(varactive, is.numeric))==FALSE) {
+effect_size <- function(active_variables, clusters) {
+  if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
-  } else if (is.vector(cluster)==FALSE) {
+  } else if (is.vector(clusters)==FALSE) {
     print("Clusters must be a vector")
   } else {
     
-    varactivegrp <- varactive %>% mutate(grp = factor(cluster))
+    active_variables_clusters <- active_variables %>% mutate(clusters = factor(clusters))
     
-    meantab <-varactivegrp %>% group_by(grp) %>%
+    cluster_mean <-active_variables_clusters %>%
+      group_by(clusters) %>%
       summarise_if(.predicate = function(x) is.numeric(x),
-                   .funs = list(mean)) %>% select_if(function(x) is.numeric(x))
+                   .funs = list(mean)) %>%
+      select_if(function(x) is.numeric(x))
     
     
-    sdfull <- varactivegrp %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd))
+    active_variables_sd <- active_variables_clusters %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd))
 
     #j = k  ::: i = col
-    k=length(unique(cluster))
-    c = ncol(varactive)
+    k = length(unique(clusters))
+    c = ncol(active_variables)
     es <- as.data.frame(matrix(ncol=c, nrow=k))
-    colnames(es)<- colnames(varactive)
+    colnames(es)<- colnames(active_variables)
     for(j in 1:k) {
       for(i in 1:c) {
-        es[j,i] <- as.numeric((meantab[j,i] - meantab[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/sdfull[,i] )
+        es[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/active_variables_sd[,i] )
       }
     }
     
@@ -368,36 +386,40 @@ effect_size <- function(varactive, cluster) {
     
     variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: \n")
     if(variable != "") {
-    vargrp <-varactivegrp %>% gather(key, value, -grp) %>% filter(key==variable)
+    var_clusters <-active_variables_clusters %>% gather(key, value, -clusters) %>% filter(key==variable)
    
     df = data.frame()
     for(i in 1:k) {
-      x<-density(vargrp[which(vargrp$grp==i),]$value)$x
-      y<-density(vargrp[which(vargrp$grp==i),]$value)$y
-      assign(paste("df", i, sep = ""), data.frame(x, y)%>%mutate(cluster=factor(i))) }
+      x<-density(var_clusters[which(var_clusters$clusters==i),]$value)$x
+      y<-density(var_clusters[which(var_clusters$clusters==i),]$value)$y
+      assign(paste("df", i, sep = ""), data.frame(x, y)%>%mutate(clusters=factor(i))) }
     
-    assign(paste("df",k+1, sep = ""), data.frame(x= density(vargrp$value)$x, y= density(vargrp$value)$y) %>% 
-             mutate(cluster=factor("Variable (unclustered)")))
+    assign(paste("df",k+1, sep = ""), data.frame(x= density(var_clusters$value)$x, y= density(var_clusters$value)$y) %>% 
+             mutate(clusters=factor("Variable (unclustersed)")))
     
     df_total = data.frame()
     for(i in 1:(k+1)) {
       df_total <- bind_rows(df_total,get(paste("df", i, sep = "")))
     }
     
-    graph_density_cluster<- df_total %>% filter(cluster!="Variable (unclustered)") %>% ggplot(aes(x=x, y=y, color=cluster))+
-      geom_area(aes(x=x, y=y, fill=cluster),alpha=0.2)+
+    graph_density_clusters<- df_total %>% filter(clusters!="Variable (unclustersed)") %>% ggplot(aes(x=x, y=y, color=clusters))+
+      geom_area(aes(x=x, y=y, fill=clusters),alpha=0.2)+
       geom_line(size=0.75)+
+      scale_fill_brewer(palette="Dark2")+
+      scale_color_brewer(palette="Dark2")+
       scale_y_continuous(expand=c(0.004,0))+
-      labs(x = "", y = "Clusters density")+
+      labs(x = "", y = "clusters density")+
       theme_minimal(base_size = 12) +
       theme(axis.title.y=element_text(size=rel(1.4)),
             axis.title.x=element_text(size=rel(1.4)),
             panel.background = element_rect(fill = NA, color = "gray40"),
             legend.position="bottom")
     
-    graph_density_total<-df_total %>% filter(cluster=="Variable (unclustered)") %>% ggplot(aes(x=x, y=y, color=cluster))+
-      geom_area(aes(x=x, y=y, fill=cluster),alpha=0.2)+
+    graph_density_total<-df_total %>% filter(clusters=="Variable (unclustersed)") %>% ggplot(aes(x=x, y=y, color=clusters))+
+      geom_area(aes(x=x, y=y, fill=clusters),alpha=0.2)+
       geom_line(size=0.75)+
+      scale_fill_brewer(palette="Dark2")+
+      scale_color_brewer(palette="Dark2")+
       scale_y_continuous(expand=c(0.004,0))+
       labs(x = "", y = "Toal density")+
       theme_minimal(base_size = 12) +
@@ -407,16 +429,16 @@ effect_size <- function(varactive, cluster) {
             legend.position="bottom")
     
     
-    print(ggarrange(graph_density_total, graph_density_cluster, 
+    print(ggarrange(graph_density_total, graph_density_clusters, 
               labels = c("", ""),
               ncol = 2))
     
-    normality_test <- shapiro.test(vargrp$value)
+    normality_test <- shapiro.test(var_clusters$value)
     
-    results <- list("Tableau des rapports de correlation :",
-                    es, "U3 value :", u3, "U2 value :", u2, "U1 value :", u1, "Affichage de la densité de : " , variable, "Test de normalité pour cette variable",  normality_test)
-    } else {results <- list("Tableau des rapports de correlation :",
-                            es, "interpretation u3", u3, "interpretation u2", u2, "interpretation u1", u1)
+    results <- list("Effect size value table",
+                    es, "U3 value table :", u3, "U2 value table :", u2, "U1 value table :", u1, "Displaying density and normality test of " , variable, normality_test)
+    } else {results <- list("Effect size value table",
+                            es, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1)
     }
     return(results)
   }
