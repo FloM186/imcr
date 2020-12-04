@@ -360,31 +360,62 @@ effect_size <- function(active_variables, clusters) {
       summarise_if(.predicate = function(x) is.numeric(x),
                    .funs = list(mean)) %>%
       select_if(function(x) is.numeric(x))
-    
-    
-    active_variables_sd <- active_variables_clusters %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd))
 
+    active_variables_sd <- active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+      select_if(function(x) is.numeric(x))
+    
+    active_variables_n <- active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length)) %>%
+      select_if(function(x) is.numeric(x))
+    
+    sd1 <- active_variables_sd[j,i] %>% as.numeric()
+    
+    sd2 <- active_variables_clusters %>%
+      filter(clusters != j) %>%
+      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+      select_if(function(x) is.numeric(x)) %>%
+      select(,i) %>% as.numeric()
+    
+    
     #j = k  ::: i = col
     k = length(unique(clusters))
     c = ncol(active_variables)
-    es <- as.data.frame(matrix(ncol=c, nrow=k))
-    colnames(es)<- colnames(active_variables)
+    
+    es_d <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(es_d)<- colnames(active_variables)
+    
     for(j in 1:k) {
       for(i in 1:c) {
-        es[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/active_variables_sd[,i] )
+        es_d[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/sqrt((sd1^2 + sd2^2)/2) )
       }
     }
     
+    n1 <- active_variables_n[j,i] %>% as.numeric()
+    n2 <- active_variables_clusters %>% filter(clusters != j) %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length)) %>%
+      select_if(function(x) is.numeric(x)) %>% select(,i) %>% as.numeric()
+    
+    es_g <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(es_g)<- colnames(active_variables)
+    for(j in 1:k) {
+      for(i in 1:c) {
+        es_g[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/sqrt(((n1-1)*sd1^2+(n2-1)*sd2^2)/(n1+n2-2)))
+      }
+    }
+    
+    
     #U3
-    u3 <- sapply(es, pnorm)
+    u3 <- sapply(es_g, pnorm)
     
     #U2
-    u2 <- sapply(as.data.frame(sapply(es, abs)/2) ,pnorm)
+    u2 <- sapply(as.data.frame(sapply(es_g, abs)/2) ,pnorm)
     
     #U1   (2u2 - 2 / u2)
     u1 <- ((2*u2) -1)/u2
     
-    variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: \n")
+    variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: ")
     if(variable != "") {
     var_clusters <-active_variables_clusters %>% gather(key, value, -clusters) %>% filter(key==variable)
    
@@ -435,8 +466,8 @@ effect_size <- function(active_variables, clusters) {
     
     normality_test <- shapiro.test(var_clusters$value)
     
-    results <- list("Effect size value table",
-                    es, "U3 value table :", u3, "U2 value table :", u2, "U1 value table :", u1, "Displaying density and normality test of " , variable, normality_test)
+    results <- list("Cohen's d",
+                    es_d, "Hedge's g", es_g, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1, "Displaying density and normality test of " , variable, normality_test)
     } else {results <- list("Effect size value table",
                             es, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1)
     }
