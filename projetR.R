@@ -124,6 +124,32 @@ frm <-fromage %>% mutate(grp = factor(groupes.cah))
 #############   brouillon ###########
 ##
 
+<<<<<<< Updated upstream
+=======
+#install.packages("extrafont")
+library(extrafont)
+font_import()
+loadfonts(device="win")     
+fonts()  
+right_join(right_join(meantab %>% mutate(cluster=1:4) %>%
+                        gather(key, mean, -cluster), sdtab  %>%
+                        mutate(cluster=1:4) %>%
+                        gather(key, sd, -cluster)), vttab %>% rename(cluster=grp) %>% gather(key, vt, -cluster)) %>%
+  ggplot(aes(x=key, y=mean))+
+  geom_bar(stat="identity", width=0.75, fill="deepskyblue")+
+  geom_point(aes(y=(vt -min_axis_vt)*scale_second_axis ), col = 'violetred2', shape=19)+
+  scale_y_continuous(labels=pretty(test2$msd),breaks=pretty(test2$msd),expand = c(0.004,0), limits = c(min_axis_y,amplitude_y),
+                     sec.axis = sec_axis(~./scale_second_axis +min_axis_vt, name="vt"))+
+  geom_errorbar(aes(ymax=mean + sd, ymin= mean - sd), colour="black", width=.2)+
+  labs(x = "Key", y = "Mean")+
+  theme_minimal(base_size = 12) +
+  theme(text=element_text(family="Calibri"),
+        axis.title.y=element_text(size=rel(1.4)),
+        axis.title.x=element_text(size=rel(1.4)),
+        panel.background = element_rect(fill = NA, color = "gray40")) +
+  facet_grid(cluster ~ ., labeller = labeller("Cluster")) + facet_wrap(~ cluster, ncol=2)
+
+>>>>>>> Stashed changes
 
 
 
@@ -181,7 +207,117 @@ val_test(fromage[,-1], groupes.cah)
 #graph : barplot ou boxplot; 1 par groupe de cluster:  mean, sd , val test, classé selon valeur test
 # graph étoile
 
+<<<<<<< Updated upstream
 
+=======
+#amplitude(leftaxis)/amplitude(rightaxis)
+
+#breaksright = 412/(412/12) -6
+#yaxis/(412/12) -6
+#Left axis LA, right axis RA
+#amplitudeLA(A transformer)/(amplitudeLA/amplitudeRA) + premierevaleurRA
+#newydataright = (ydata --6)*(412/12)
+#(ydata - premierevaleurRA )*(amplitudeLA/amplitudeRA)
+
+#################valeur test
+val_test <- function(varactive, cluster, showgraph=TRUE) {
+  if(all(sapply(varactive, is.numeric))==FALSE) {
+    print("Les variables actives quantitatives doivent être numériques")
+  } else if (is.vector(cluster)==FALSE) {
+    print("Le clustering des observations doit être sous forme de vecteur")
+  } else {
+    varactivegrp <- varactive %>% mutate(grp = factor(cluster))
+    
+    meantab <-varactivegrp %>% group_by(grp) %>%
+      summarise_if(.predicate = function(x) is.numeric(x),
+                   .funs = list(mean)) %>% select_if(function(x) is.numeric(x))
+    
+    ntab <-varactivegrp %>% group_by(grp) %>%
+      summarise_if(.predicate = function(x) is.numeric(x),
+                   .funs = list(length))  %>% select_if(function(x) is.numeric(x))
+    
+    meanfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
+    
+    nfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length))
+    
+    varfull <- varactive %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(var))
+    
+    k=length(unique(cluster))
+    c = ncol(varactive)
+    vttab <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(vttab)<- colnames(varactive)
+    for(j in 1:k) {
+      for(i in 1:c) {
+        vttab[j,i] <- as.numeric((meantab[j,i] - meanfull[,i])/sqrt(((nfull[,i] - ntab[j,i])/(nfull[,i]-1))*(varfull[,i]/ntab[j,i])))
+      }
+    }
+    
+    vttab <- vttab %>% mutate(cluster= 1:k) %>% select(cluster, everything())
+    
+    full_table<-right_join(right_join(meantab %>% mutate(cluster=1:k) %>%
+                                   gather(key, mean, -cluster),
+                                 sdtab  %>%
+                                   mutate(cluster=1:k) %>%
+                                   gather(key, sd, -cluster)),
+                      vttab %>% gather(key, vt, -cluster))
+    
+    barheight<- full_table %>% group_by(key, cluster) %>% summarise(msd = mean + sd)
+    
+    min_axis_vt<-min(pretty(full_table$vt))
+    amplitude_vt<-abs(min(pretty(full_table$vt)))+abs(max(pretty(full_table$vt)))
+    
+        min_axis_y <- min(pretty(barheight$msd))
+    max_axis_y <-barheight %>% ungroup() %>%
+      summarise(max1= max(msd), maxtot=round(max1+max1*(1/40))) %>% select(maxtot) %>% as.numeric()
+    
+    scale_second_axis<-max_axis_y/amplitude_vt
+  if(showgraph==TRUE) {
+    print(full_table %>%
+      ggplot(aes(x=key, y=mean))+
+      geom_bar(stat="identity", width=0.75, fill="deepskyblue")+
+      geom_point(aes(y=(vt -min_axis_vt)*scale_second_axis ), col = 'violetred2', shape=19)+
+      geom_line(aes(y=(vt -min_axis_vt)*scale_second_axis, group=1 ), size= 0.65,col = 'violetred1')+
+      scale_y_continuous(labels=pretty(barheight$msd),breaks=pretty(barheight$msd),expand = c(0.004,0), limits = c(min_axis_y,amplitude_y),
+                         sec.axis = sec_axis(~./scale_second_axis +min_axis_vt, name="Test value"))+
+      geom_errorbar(aes(ymax=mean + sd, ymin= mean - sd), colour="black", width=.2)+
+      labs(x = "Key", y = "Mean")+
+      theme_minimal(base_size = 12) +
+      theme(text=element_text(family="Calibri"),
+            axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+            axis.title.y=element_text(size=rel(1.4)),
+            axis.title.x=element_text(size=rel(1.4)),
+            panel.background = element_rect(fill = NA, color = "gray40")) +
+      facet_grid(cluster ~ ., labeller = labeller("Cluster")) + facet_wrap(~ cluster, ncol=2))} else {}
+    
+    
+
+    results <- list("Tableau des valeurs propres. Plus la valeur de la variable est élevée plus elle contribue à la constitution des groupes",
+                    vttab)
+    return(results)
+    
+  }
+}
+
+
+#test:
+val_test(fromage[,-1], groupes.cah, showgraph = TRUE)
+
+
+
+
+#graph étoile/spider:
+#ne marche pas encore...
+#https://webdevdesigner.com/q/creating-radar-chart-a-k-a-star-plot-spider-plot-using-ggplot2-in-r-65407/
+full_table %>% ggplot(aes(x=key, y=vt, group=cluster, color=factor(cluster))) + 
+  geom_point() + 
+  geom_line(size=2) + 
+  xlab("Decils") + 
+  ylab("% difference in nº Pk") + 
+  #ylim(-50,25) + ggtitle("CL")  + 
+  #geom_line(aes(yintercept=0), lwd=1, lty=2) + 
+  #scale_x_discrete(limits=c(orden_deciles)) +
+  coord_polar()
+>>>>>>> Stashed changes
 
 #################rapport de corrélation
 rapp_corr <- function(varactive, cluster) {
