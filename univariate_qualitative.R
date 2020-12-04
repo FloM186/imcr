@@ -24,19 +24,18 @@ classe=sample(c(1,2,3),2000,replace=T)
 correler <- function(class,var){
   #création de l'instance
   instance <- list()
-  instance$tab <- table(class,var)
-  instance$v.cramer <- v.cramer(class, var)
-  instance$l.profil <- l.profil(class,var)
-  instance$c.profil <- c.profil(class,var)
-  instance$h <- h.value.test(instance$tab)
-  instance$phi <- phi.value.test(instance$tab)
+  instance$v.cramer <- v.cramer(classe, var)
+  instance$l.profil <- l.profil(classe, var)
+  instance$c.profil <- c.profil(classe, var)
+  instance$h <- h.value.test(classe, var)
+  instance$phi <- phi.value.test(classe, var)
   class(instance) <- "univariate qualitative"
   return(instance)
 }
 
 
 
-v.cramer <- function(classe, var){
+v.cramer <- function(classe, var, digits=5){
   #Teste si les variables sont sous forme de data.frame
   if(class(var) == "data.frame"){
     names_col = names(var)
@@ -64,11 +63,11 @@ v.cramer <- function(classe, var){
     return(vec.cramer)
     
     # On calcul le v de cramer si seulement une variable qualitative a été passée en paramètre
-  }else if(is.factor(var)){
+  }else if(is.factor(var) || is.character(var)){
       contingence = table(classe,var)
       khi = chisq.test(contingence, correct=F)$statistic
       dim = min(nrow(contingence),ncol(contingence)) - 1
-      v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),5)
+      v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
       return(v_cramer)
     }
 }
@@ -108,42 +107,107 @@ c.profil <- function(classe, var,digits=2){
 }
 
 
+h.value.test <- function(classe, var, digits=4){
+  if(is.factor(var) || is.character(var)){
+    tab=table(classe,var)
+    name = colnames(tab)
+    nbr_classe = length(levels(as.factor(classe)))
+    nbr_mod = length(levels(as.factor(var)))
+    results = data.frame(NA, ncol=3, nrow = nbr_classe*nbr_mod)
+    colnames(results) = c("class", "modality", "h")
+    cpt=1
+    for(i in 1:nbr_classe){
+      for(j in 1:nbr_mod){
+        phi.lg = 2*asin(sqrt(tab[i,j] / sum(tab[i,])))
+        mod_target = sum(tab[,j]) - tab[i,j] 
+        phi.la = 2*asin(sqrt(mod_target / sum(tab[-i,])))
+        h = phi.lg - phi.la
+        results[cpt,] = c(i,name[j], round(h,digits))
+        cpt = cpt+1
+      }
+    }
+    results[,3] = as.numeric(results[,3])
+    print(ggplot(data=results, aes(x=modality, y=phi, fill=class)) +
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot for h values by modalities according to class")+
+            geom_hline(aes(yintercept = 0.2,colour = "small value"),linetype = 1, size=1.5)+
+            geom_hline(aes(yintercept = 0.5,colour = "medium value"),linetype = 1, size=1.5)+
+            geom_hline(aes(yintercept = 0.8,colour = "large value"),linetype = 1, size=1.5)+
+            geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3))
+    return(results)
+  }  else if(class(var) == "data.frame"){
+    ls = list()
+    cpt=1
+    for(i in 1:ncol(var)){
+      if(is.factor(var[,i]) || is.character(var[,i])){
+        ls[[cpt]] = h.value.test(classe, var[,i])
+        cpt = cpt +1
+      }
+    }
+    return(ls)
+  }  
+}
 
-h.value.test <- function(tab, indice.tab.modalite = 1, indice.tab.group = 1){
+
+sign_h_value <- function(tab){
   tab = cbind(tab,apply(tab,1,sum))
-  phi.lg = 2*asin(sqrt(tab[indice.tab.group,indice.tab.modalite]/tab[indice.tab.group,ncol(tab)]))
-  phi.la = 2*asin(sqrt( (sum(tab[,indice.tab.modalite])-tab[indice.tab.group,indice.tab.modalite]) / (sum(tab[,ncol(tab)])-tab[indice.tab.group,ncol(tab)]) ))
+  phi.lg = 2*asin(sqrt(tab[1,1]/tab[1,ncol(tab)]))
+  phi.la = 2*asin(sqrt( (sum(tab[,1])-tab[1,1]) / (sum(tab[,ncol(tab)])-tab[1,ncol(tab)]) ))
   h = phi.lg - phi.la
   h2 = abs(h)
-  print(ggplot() +
-    geom_hline(aes(yintercept = 0.2,color = "small absolute value"),linetype = 1, size=1.5)+
-    geom_hline(aes(yintercept = 0.5,colour = "medium absolute value"),linetype = 1, size=1.5)+
-    geom_hline(aes(yintercept = 0.8,colour = "large absolute value"),linetype = 1, size=1.5)+
-    geom_hline(aes(yintercept = h2 ,colour = "h absolute value"),linetype = 2, size=2)+
-    ggtitle("h according to statistical significance"))
+    # print(ggplot() +
+    #   geom_hline(aes(yintercept = 0.2,color = "small absolute value"),linetype = 1, size=1.5)+
+    #   geom_hline(aes(yintercept = 0.5,colour = "medium absolute value"),linetype = 1, size=1.5)+
+    #   geom_hline(aes(yintercept = 0.8,colour = "large absolute value"),linetype = 1, size=1.5)+
+    #   geom_hline(aes(yintercept = h2 ,colour = "h absolute value"),linetype = 2, size=2)+
+    #   ggtitle("h according to statistical significance"))
   return(h)
 }
 
-phi.value.test <- function(tab){
-  if(ncol(tab) != 2 && nrow(tab) != 2){
-    stop("Table must be 2x2")
+phi.value.test <- function(classe, var, digits=4){
+  if(is.factor(var) || is.character(var)){
+    tab=table(classe,var)
+    name = colnames(tab)
+    nbr_classe = length(levels(as.factor(classe)))
+    nbr_mod = length(levels(as.factor(var)))
+    results = data.frame(NA, ncol=3, nrow = nbr_classe*nbr_mod)
+    colnames(results) = c("class", "modality", "phi")
+    cpt=1
+    for(i in 1:nbr_classe){
+      for(j in 1:nbr_mod){
+        target = tab[i,j]
+        group_target = sum(tab[i,]) - target
+        mod_target = sum(tab[,j]) - target
+        other = sum(tab) - (target+group_target+mod_target)
+        tab2 = as.table(cbind(c(target,mod_target),c(group_target, other)))
+        phi = sqrt(chisq.test(tab2,simulate.p.value = TRUE)$statistic/sum(tab2))
+        signe = sign_h_value(tab2, bool = TRUE)
+        if(sign(signe) == -1){
+          phi = -phi
+        }
+        results[cpt,] = c(i,name[j], round(phi,digits))
+        cpt = cpt+1
+      }
+    }
+    results[,3] = as.numeric(results[,3])
+    print(ggplot(data=results, aes(x=modality, y=phi, fill=class)) +
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot for phi values by modalities according to class")+
+            geom_hline(aes(yintercept = 0.1,colour = "small value"),linetype = 1, size=1.5)+
+            geom_hline(aes(yintercept = 0.3,colour = "medium value"),linetype = 1, size=1.5)+
+            geom_hline(aes(yintercept = 0.5,colour = "large value"),linetype = 1, size=1.5)+
+            geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3))
+    return(results)
+  }else if(class(var) == "data.frame"){
+    ls = list()
+    cpt=1
+    for(i in 1:ncol(var)){
+      if(is.factor(var[,i]) || is.character(var[,i])){
+        ls[[cpt]] = phi.value.test(classe, var[,i])
+        cpt = cpt +1
+      }
+    }
+    return(ls)
   }
-  khi = chisq.test(tab)$statistic
-  n = sum(tab)
-  phi = as.numeric(sqrt(khi/n))
-  signe = h.value.test(tab)
-  if(sign(signe) == -1){
-    phi = -phi
-  }
-  phi2 = abs(phi)
-  print(ggplot() +
-          geom_hline(aes(yintercept = 0.1,color = "small absolute value"),linetype = 1, size=1.5)+
-          geom_hline(aes(yintercept = 0.3,colour = "medium absolute value"),linetype = 1, size=1.5)+
-          geom_hline(aes(yintercept = 0.5,colour = "large absolute value"),linetype = 1, size=1.5)+
-          geom_hline(aes(yintercept = phi2 ,colour = "phi absolute value"),linetype = 2, size=2)+
-          ggtitle("phi according to statistical significance"))
-  return(phi)
 }
-  
-phi.value.test(tab)
+
+
 
