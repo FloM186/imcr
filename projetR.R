@@ -502,8 +502,6 @@ effect_size(fromage[,-1], groupes.cah)
 
 
 
-
-
 #############   test Clvalid##########
 # https://www.rdocumentation.org/packages/clValid/versions/0.6-9/topics/clValid
 library(clValid)
