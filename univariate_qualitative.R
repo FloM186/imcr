@@ -18,54 +18,70 @@ rect.hclust(cah,k=4)
 classe <- cutree(cah,k=4)
 classe = unname(classe)
 
-classe=sample(c(1,2,3),2000,replace=T)
+#classe=sample(c(1,2,3),2000,replace=T)
 
-#"constructeur" pour classe S3
-correler <- function(class,var){
-  #création de l'instance
+#constructor for S3 class
+quali_caracterisation <- function(active_variables, clusters){
+  
+  #instance creation
   instance <- list()
-  instance$v.cramer <- v.cramer(classe, var)
-  instance$l.profil <- l.profil(classe, var)
-  instance$c.profil <- c.profil(classe, var)
-  instance$h <- h.value.test(classe, var)
-  instance$phi <- phi.value.test(classe, var)
+  instance$v.cramer <- v.cramer(active_variables, clusters)
+  instance$l.profil <- l.profil(active_variables, clusters)
+  instance$c.profil <- c.profil(active_variables, clusters)
+  instance$h <- h.value.test(active_variables, clusters)
+  instance$phi <- phi.value.test(active_variables, clusters)
   class(instance) <- "univariate qualitative"
   return(instance)
 }
 
 
 
-v.cramer <- function(classe, var, digits=5){
-  #Teste si les variables sont sous forme de data.frame
-  if(class(var) == "data.frame"){
-    names_col = names(var)
-    cramer_var = c()
+v.cramer <- function(active_variables, clusters, digits=5){
+  
+  #Tests if the variables passed in parameter are in the form of data.frame
+  if(class(active_variables) == "data.frame"){
+    names_col = names(active_variables)
+    cramer_active_variables = c()
     cramer_val = c()
-    #On calcul le v de cramer pour toutes les variables qualitatives
-    for(i in 1:ncol(var)){
-      if(is.factor(var[,i]) || is.character(var[,i])){
-        contingence = table(classe,var[,i])
+    
+    #We calculate the cramer's v for all the qualitative variables
+    for(i in 1:ncol(active_variables)){
+      if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+        contingence = table(clusters,active_variables[,i])
         khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
         dim = min(nrow(contingence),ncol(contingence)) - 1
         v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),5)
-        cramer_var = append(cramer_var,names_col[i])
+        
+        #Two vectors, one for variables names, the other for values
+        cramer_active_variables = append(cramer_active_variables,names_col[i])
         cramer_val = append(cramer_val,as.numeric(v_cramer))
       }
     }
-    tab_cramer = cbind(cramer_var,cramer_val)
+    
+    #Creation of a data frame from the two vectors for ggplot
+    tab_cramer = cbind(cramer_active_variables,cramer_val)
     data <- as.data.frame(matrix(as.numeric(tab_cramer[,2]), ncol=nrow(tab_cramer)))
     colnames(data) = tab_cramer[,1]
     data = rbind(rep(1,length(tab_cramer)),rep(0,length(tab_cramer)),data)
     
-    print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
+    #Radarchart only if the number of variables is greater than 2
+    if(length(cramer_active_variables) > 2){
+      print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
     
-    vec.cramer=setNames(cramer_val,cramer_var)
+    #Otherwise, we print a barplot
+    }else{
+      print(ggplot(data=as.data.frame(tab_cramer), aes(x=cramer_active_variables, y=cramer_val)) +
+              geom_bar(stat="identity", position=position_dodge()) + ggtitle("Cramer's v by variables"))
+    }
+    
+    vec.cramer=setNames(cramer_val,cramer_active_variables)
     return(vec.cramer)
     
-    # On calcul le v de cramer si seulement une variable qualitative a été passée en paramètre
-  }else if(is.factor(var) || is.character(var)){
-      contingence = table(classe,var)
-      khi = chisq.test(contingence, correct=F)$statistic
+    
+    #We calculate the cramer's v if only one qualitative variable has been passed as a parameter
+    }else if(is.factor(active_variables) || is.character(active_variables)){
+      contingence = table(clusters,active_variables)
+      khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
       dim = min(nrow(contingence),ncol(contingence)) - 1
       v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
       return(v_cramer)
@@ -74,49 +90,106 @@ v.cramer <- function(classe, var, digits=5){
 
 
 
-l.profil <- function(classe, var, digits=2){
-  tab=table(classe,var)
-  name = names(dimnames(tab))
+l.profil <- function(active_variables, clusters, digits=2){
   
-  print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=var, y=Freq, fill=classe)) +
-          geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot by variables according to class"))
+  #Tests if only one variable passed in parameter
+  if(is.factor(active_variables) || is.character(active_variables)){
+    
+    #We create the contingency variable
+    tab=table(clusters,active_variables)
+    name = names(dimnames(tab))
+    
+    #Print a barplot for the contingency table
+    print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class"))
+    
+    #Add a row Ensemble which is the sum of each columns 
+    tab=rbind(tab,Ensemble = apply(tab,2,sum))
+    #We put the values in percentage
+    tab = round(prop.table(tab,1)*100,digits)
+    #Add a column Total which is the sum of each rows
+    tab=cbind(tab, Total = apply(tab,1,sum))
+    tab = as.table(tab)
+    names(dimnames(tab)) = name
+    return(tab)
   
-  tab=rbind(tab,Ensemble = apply(tab,2,sum))
-  tab = round(prop.table(tab,1)*100,digits)
-  tab=cbind(tab, Total = apply(tab,1,sum))
-  tab = as.table(tab)
-  names(dimnames(tab)) = name
-  return(tab)
+    #Tests if many variables are passed in parameter
+    } else if(class(active_variables) == "data.frame"){
+      ls = list()
+      cpt=1
+      
+      #recursiveness of the function for each variables
+      for(i in 1:ncol(active_variables)){
+        if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+          ls[[cpt]] = l.profil(active_variables[,i], clusters)
+          cpt = cpt +1
+        }
+      }
+      return(ls)
+    }
 }
 
 
 
-c.profil <- function(classe, var,digits=2){
-  tab=table(classe,var)
-  name = names(dimnames(tab))
+c.profil <- function(active_variables, clusters, digits=2){
   
-  print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=var, y=Freq, fill=classe)) +
-          geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot by variables according to class"))
-  
-  tab=cbind(tab,Ensemble = apply(tab,1,sum))
-  tab = round(prop.table(tab,2)*100,digits)
-  tab=rbind(tab, Total = apply(tab,2,sum))
-  tab = as.table(tab)
-  names(dimnames(tab)) = name
-  return(tab)
-}
-
-
-h.value.test <- function(classe, var, digits=4){
-  if(is.factor(var) || is.character(var)){
-    tab=table(classe,var)
-    name = colnames(tab)
-    nbr_classe = length(levels(as.factor(classe)))
-    nbr_mod = length(levels(as.factor(var)))
-    results = data.frame(NA, ncol=3, nrow = nbr_classe*nbr_mod)
-    colnames(results) = c("class", "modality", "h")
+  #Tests if only one variable passed in parameter
+  if(is.factor(active_variables) || is.character(active_variables)){
+    
+    #We create the contingency variable
+    tab=table(clusters,active_variables)
+    name = names(dimnames(tab))
+    
+    #Print a barplot for the contingency table
+    print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class"))
+    
+    #Add a row Ensemble which is the sum of each rows
+    tab=cbind(tab,Ensemble = apply(tab,1,sum))
+    #We put the values in percentage
+    tab = round(prop.table(tab,2)*100,digits)
+    #Add a column Total which is the sum of each columns
+    tab=rbind(tab, Total = apply(tab,2,sum))
+    tab = as.table(tab)
+    names(dimnames(tab)) = name
+    return(tab)
+ 
+    #Tests if many variables are passed in parameter
+    } else if(class(active_variables) == "data.frame"){
+    ls = list()
     cpt=1
-    for(i in 1:nbr_classe){
+    
+    #recursiveness of the function for each variables
+    for(i in 1:ncol(active_variables)){
+      if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+        ls[[cpt]] = c.profil(active_variables[,i], clusters)
+        cpt = cpt +1
+      }
+    }
+    return(ls)
+  }
+}
+
+
+h.value.test <- function(active_variables, clusters, digits=4){
+  
+  #Tests if only one variable passed in parameter
+  if(is.factor(active_variables) || is.character(active_variables)){
+    
+    tab=table(clusters,active_variables)
+    name = colnames(tab)
+    
+    #Several values are retrieved for the calculation of the test value h
+    nbr_clusters = length(levels(as.factor(clusters)))
+    nbr_mod = length(levels(as.factor(active_variables)))
+    
+    #Creation of the data frame that will contain the results
+    results = data.frame(NA, ncol=3, nrow = nbr_clusters*nbr_mod)
+    colnames(results) = c("class", "modality", "h")
+    
+    #For each cluster and modalities of the variable, we calculate the test value h and store it in our data frame.
+    cpt=1
+    for(i in 1:nbr_clusters){
       for(j in 1:nbr_mod){
         phi.lg = 2*asin(sqrt(tab[i,j] / sum(tab[i,])))
         mod_target = sum(tab[,j]) - tab[i,j] 
@@ -127,19 +200,25 @@ h.value.test <- function(classe, var, digits=4){
       }
     }
     results[,3] = as.numeric(results[,3])
-    print(ggplot(data=results, aes(x=modality, y=phi, fill=class)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot for h values by modalities according to class")+
+    
+    #We print our results in a barplot with threshold values
+    print(ggplot(data=results, aes(x=modality, y=h, fill=class)) +
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("h value by modalities according to class")+
             geom_hline(aes(yintercept = 0.2,colour = "small value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.5,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.8,colour = "large value"),linetype = 1, size=1.5)+
             geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3))
     return(results)
-  }  else if(class(var) == "data.frame"){
+    
+    #Tests if many variables are passed in parameter
+  }else if(class(active_variables) == "data.frame"){
     ls = list()
     cpt=1
-    for(i in 1:ncol(var)){
-      if(is.factor(var[,i]) || is.character(var[,i])){
-        ls[[cpt]] = h.value.test(classe, var[,i])
+    
+    #recursiveness of the function for each variables
+    for(i in 1:ncol(active_variables)){
+      if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+        ls[[cpt]] = h.value.test(active_variables[,i], clusters)
         cpt = cpt +1
       }
     }
@@ -149,24 +228,34 @@ h.value.test <- function(classe, var, digits=4){
 
 
 sign_h_value <- function(tab){
+  
+  #This function is used to calculate h to get his sign for calculating phi value 
+  
   tab = cbind(tab,apply(tab,1,sum))
   phi.lg = 2*asin(sqrt(tab[1,1]/tab[1,ncol(tab)]))
   phi.la = 2*asin(sqrt( (sum(tab[,1])-tab[1,1]) / (sum(tab[,ncol(tab)])-tab[1,ncol(tab)]) ))
   h = phi.lg - phi.la
-  h2 = abs(h)
   return(h)
 }
 
-phi.value.test <- function(classe, var, digits=4){
-  if(is.factor(var) || is.character(var)){
-    tab=table(classe,var)
+phi.value.test <- function(active_variables, clusters, digits=4){
+  
+  #Tests if only one variable passed in parameter
+  if(is.factor(active_variables) || is.character(active_variables)){
+    tab=table(clusters,active_variables)
     name = colnames(tab)
-    nbr_classe = length(levels(as.factor(classe)))
-    nbr_mod = length(levels(as.factor(var)))
-    results = data.frame(NA, ncol=3, nrow = nbr_classe*nbr_mod)
+    
+    #Several values are retrieved for the calculation of the test value phi
+    nbr_clusters = length(levels(as.factor(clusters)))
+    nbr_mod = length(levels(as.factor(active_variables)))
+    
+    #Creation of the data frame that will contain the results
+    results = data.frame(NA, ncol=3, nrow = nbr_clusters*nbr_mod)
     colnames(results) = c("class", "modality", "phi")
+    
+    #For each cluster and modalities of the variable, we calculate the test value phi and store it in our data frame.
     cpt=1
-    for(i in 1:nbr_classe){
+    for(i in 1:nbr_clusters){
       for(j in 1:nbr_mod){
         target = tab[i,j]
         group_target = sum(tab[i,]) - target
@@ -174,7 +263,7 @@ phi.value.test <- function(classe, var, digits=4){
         other = sum(tab) - (target+group_target+mod_target)
         tab2 = as.table(cbind(c(target,mod_target),c(group_target, other)))
         phi = sqrt(chisq.test(tab2,simulate.p.value = TRUE)$statistic/sum(tab2))
-        signe = sign_h_value(tab2, bool = TRUE)
+        signe = sign_h_value(tab2)
         if(sign(signe) == -1){
           phi = -phi
         }
@@ -183,19 +272,25 @@ phi.value.test <- function(classe, var, digits=4){
       }
     }
     results[,3] = as.numeric(results[,3])
+    
+    #We print our results in a barplot with threshold values
     print(ggplot(data=results, aes(x=modality, y=phi, fill=class)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Barplot for phi values by modalities according to class")+
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Phi value by modalities according to class")+
             geom_hline(aes(yintercept = 0.1,colour = "small value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.3,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.5,colour = "large value"),linetype = 1, size=1.5)+
             geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3))
     return(results)
-  }else if(class(var) == "data.frame"){
+  
+    #Tests if many variables are passed in parameter
+  }else if(class(active_variables) == "data.frame"){
     ls = list()
     cpt=1
-    for(i in 1:ncol(var)){
-      if(is.factor(var[,i]) || is.character(var[,i])){
-        ls[[cpt]] = phi.value.test(classe, var[,i])
+    
+    #recursiveness of the function for each variables
+    for(i in 1:ncol(active_variables)){
+      if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+        ls[[cpt]] = phi.value.test(active_variables[,i], clusters)
         cpt = cpt +1
       }
     }
