@@ -57,7 +57,7 @@ v.cramer <- function(classe, var, digits=5){
     colnames(data) = tab_cramer[,1]
     data = rbind(rep(1,length(tab_cramer)),rep(0,length(tab_cramer)),data)
     
-    radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 )
+    print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
     
     vec.cramer=setNames(cramer_val,cramer_var)
     return(vec.cramer)
@@ -154,12 +154,6 @@ sign_h_value <- function(tab){
   phi.la = 2*asin(sqrt( (sum(tab[,1])-tab[1,1]) / (sum(tab[,ncol(tab)])-tab[1,ncol(tab)]) ))
   h = phi.lg - phi.la
   h2 = abs(h)
-    # print(ggplot() +
-    #   geom_hline(aes(yintercept = 0.2,color = "small absolute value"),linetype = 1, size=1.5)+
-    #   geom_hline(aes(yintercept = 0.5,colour = "medium absolute value"),linetype = 1, size=1.5)+
-    #   geom_hline(aes(yintercept = 0.8,colour = "large absolute value"),linetype = 1, size=1.5)+
-    #   geom_hline(aes(yintercept = h2 ,colour = "h absolute value"),linetype = 2, size=2)+
-    #   ggtitle("h according to statistical significance"))
   return(h)
 }
 
