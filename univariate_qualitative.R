@@ -50,7 +50,7 @@ v.cramer <- function(active_variables, clusters, digits=5){
         contingence = table(clusters,active_variables[,i])
         khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
         dim = min(nrow(contingence),ncol(contingence)) - 1
-        v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),5)
+        v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
         
         #Two vectors, one for variables names, the other for values
         cramer_active_variables = append(cramer_active_variables,names_col[i])
