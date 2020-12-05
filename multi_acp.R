@@ -5,6 +5,15 @@ cah.ward <- hclust(d.fromage,method="ward.D2")
 groupes.cah <- cutree(cah.ward,k=4)
 groupes.cah=as.factor(groupes.cah)
 
+data<-read.csv2("E:/M1 - INFO/S2/Clustering/Villes universitaires.csv",header=TRUE,row.names="Villes")
+d.active<-data[,1:9]
+active.cr <- scale(d.active,center=T,scale=T)
+d.active <- dist(active.cr)
+cah.ward <- hclust(d.active,method="ward.D2")
+groupes.cah <- cutree(cah.ward,k=4)
+groupes.cah=as.factor(groupes.cah)
+d.active<-data[,1:10]
+
 #Choix d'utiliser deux packages : FactoMineR (pour l'analyse) et factoextra (pour la visualisation, des données, basée sur ggplot2)
 install.packages(c("FactoMineR", "factoextra"))
 library("FactoMineR")
@@ -13,106 +22,117 @@ library(ggplot2)
 
 corr <- runif(9, 0, 1)
 
-tab.var<-function(var,nb_dim){
+tab<-function(obj,nb_dim){
   list.tab<-list()
   for(i in 1:nb_dim){
-    coord<-var$coord[,i]
-    contrib<-var$contrib[,i]
-    cos2<-var$cos2[,i]
+    coord<-obj$coord[,i]
+    contrib<-obj$contrib[,i]
+    cos2<-obj$cos2[,i]
     display<-as.data.frame(cbind(coord,contrib,cos2))
-    nom<-paste("dim",as.character(i))
-    list.tab[[i]]<-display
+    display<-display[which(display[,2]>=median(display[,2])&display[,3]>=0.5),]
+    nom<-paste("Dim",i,sep=" ")
+    list.tab[[nom]]<-display
   }
   return(list.tab)
 }
 
-ACP_tab<-function(X,y,nbr_dim,quali.supp=NULL){
+print.ACP_tab <- function (x, file = NULL, sep = ";", ...){
+  res.pca <- x
+  if (!inherits(res.pca, "ACP_tab")) stop("non convenient data")
+  cat("**Results Mutltivarial Analysis using PCA**\n")
+  cat("*The results are available in the following objects:\n\n")
+  res <- array("", c(24, 2), list(1:24, c("name", "description")))
+  res[1, ] <- c("eig.values", "eigenvalues")
+  res[2, ] <- c("$var.tab", "results for the variables")
+  res[3, ] <- c("$ind.tab", "results for the individus")
+  indice <- 4
+  if (!is.null(res.pca$quali.sup)){
+    res[indice, ] <- c("$quali.supp", "results for the supplementary categorical variables")
+  }
+  print(res[1:indice,])
+  if (!is.null(file)) {
+    write.infile(res.pca,file = file, sep=sep)
+    print(paste("All the results are in the file",file))
+  }
+}
+
+plot.ACP_tab<-function(x,y, axes = c(1, 2)){
+  #Cercle corr�lation cos2
+  print(fviz_pca_var(x, col.var = "cos2",
+                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                     axes = axes
+  ))
+  
+  #Cercle corr�lation cramer
+  print(fviz_pca_var(x, col.var = corr,
+                     gradient.cols = c("blue", "yellow", "red"),
+                     legend.title = "Cont.Var",axes = axes) ) 
+  #Graph selon classe + cos2
+  print(fviz_pca_ind(x,
+                     repel=TRUE,pointsize = "cos2",
+                     pointshape = 21,# Montre les points seulement (mais pas le "text")
+                     col.ind = y, # colorer by groups
+                     legend.title = "Classes",
+                     axes = axes
+  ))
+  #geom.ind = "point",  
+  #Graph selon classe + contrib
+  print(fviz_pca_ind(x,
+                     repel=TRUE,pointsize = "contrib",
+                     pointshape = 21,# Montre les points seulement (mais pas le "text")
+                     col.ind = y, # colorer by groups
+                     legend.title = "Classes",
+                     axes = axes
+  ))
+}
+
+ACP_tab<-function(X,y,quali.supp=NULL,graph=NULL){
   if (length(X) < 2){
     stop("X doesn't contain enough variables")
   }
   if (length(y)!=nrow(X)){
     stop("X and y doesn't have the same length")
   }
-  if(is.null(quali.supp)==FALSE){
-    test=TRUE
-    for (i in 1:quali.supp){
-      if(is.factor(quali.supp[,i])==FALSE){
-        test=FALSE
-      }
-    }
-    if(test==FALSE){
-      stop("index quali_supp is not factor")
-    }
-  }
+  
   # Analyse en Composantes Principales (ACP)
   res.pca<-PCA(X,quali.sup = quali.supp, scale.unit = TRUE, graph = FALSE)
   
   #Visualisation des valeurs propres
   eig.val <- get_eigenvalue(res.pca)
-  graph<-fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 1)) 
+  print(fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 100)))
   
-  #création de l'instance
+  nb_dim<-readline(prompt="How many axes do you want to keep ? " )
+  nb_dim<-as.integer(nb_dim)
+  
+  #Tableau var
+  var<-tab(get_pca_var(res.pca),nb_dim)
+  
+  #Tableau individu
+  ind <- tab(get_pca_ind(res.pca),nb_dim)
+
+  #creation de l'instance
   instance <- list()
   instance$eig.values<-eig.val
-  instance$graph.eig<-graph
-  instance$var.tab <- tab.var(get_pca_var(res.pca),nbr_dim)
+  instance$var.tab <- var
+  instance$ind.tab<-ind
   if(is.null(quali.supp)==FALSE){
     instance$quali.supp<-res.pca$quali
   }
-  class(instance) <- "ACP_tab"
+  class(instance) <- c("ACP_tab","list ")
+  
+  if(!is.null(graph)){
+    plot.ACP_tab(res.pca,y)
+  }
   #renvoyer le résultat
   return(instance)
   
 }
 
-ACP_graph<-function(X,y,dim1,dim2,quanti.supp=NULL){
-  if (length(X) < 2){
-    stop("X doesn't contain enough variables")
-  }
-  if (length(y)!=nrow(X)){
-    stop("X and y doesn't have the same length")
-  }
-  if(is.null(quali_supp)==FALSE){
-    test=TRUE
-    for (i in 1:quali.supp){
-      if(is.factor(quali.supp[,i])==FALSE){
-        test=FALSE
-      }
-    }
-    if(test==FALSE){
-      stop("index quali_supp is not factor")
-    }
-  }
-  # Analyse en Composantes Principales (ACP)
-  res.pca<-PCA(X,quali.sup = quali.supp, scale.unit = TRUE, ncp = 5, graph = FALSE)
-  
-  #Cercle des corrélations avec coloriage selon la contribution
-  graph1<-fviz_pca_var(res.pca, col.var = "contrib",
-                       gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),axes = c(dim1, dim2)
-  )
-  
-  # Colorer les variables en fonction d'une variable continue
-  graph2<-fviz_pca_var(res.pca, col.var = corr,
-               gradient.cols = c("blue", "yellow", "red"),
-               legend.title = "Cont.Var",axes = c(dim1, dim2))
-  
-  #Colorer selon les classes
-  graph3<-fviz_pca_ind(res.pca,
-                       geom.ind = "point", # Montre les points seulement (mais pas le "text")
-                       col.ind = y, # colorer by groups
-                       legend.title = "Classes",
-                       axes = c(dim1, dim2)
-  )
-  
-  #création de l'instance
-  instance <- list()
-  instance$circle.contrib<-graph1
-  instance$circle.corr<-graph2
-  instance$graph.ind <- graph3
-  class(instance) <- "ACP_tab"
-  #renvoyer le résultat
-  return(instance)
-}
+res1<-ACP_tab(d.active,groupes.cah,10,graph=TRUE)
+print(res1)
+res1$var.tab$`Dim 2`
 
-res1<-ACP_tab(fromage,groupes.cah,5)
-res2<-ACP_graph(fromage,groupes.cah,1,2)
+
+
+
+

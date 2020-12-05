@@ -3,6 +3,7 @@
 install.packages(c("FactoMineR", "factoextra"))
 library("FactoMineR")
 library("factoextra")
+library("corrplot")
 
 #
 # Importation des données et sélection des éléments -----------------------
@@ -51,15 +52,16 @@ v.cramer <- function(classe, var){
   }
 }
 
-tab.var<-function(var,nb_dim){
+tab<-function(obj,nb_dim){
   list.tab<-list()
   for(i in 1:nb_dim){
-    coord<-var$coord[,i]
-    contrib<-var$contrib[,i]
-    cos2<-var$cos2[,i]
+    coord<-obj$coord[,i]
+    contrib<-obj$contrib[,i]
+    cos2<-obj$cos2[,i]
     display<-as.data.frame(cbind(coord,contrib,cos2))
-    nom<-paste("dim",as.character(i))
-    list.tab[[i]]<-display
+    display<-display[which(display[,2]>=median(display[,2])&display[,3]>=0.5),]
+    nom<-paste("Dim",i,sep=" ")
+    list.tab[[nom]]<-display
   }
   return(list.tab)
 }
@@ -74,103 +76,100 @@ desc.dim<-function(res,nb_dim){
 
 # Analyse factorielle des Correspondances (ACM) --------------------------------
 #
-ACM_val<-function(X,nbr_dim,quanti.supp=NULL){
+ACM_val<-function(X,y,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
   if (length(X) < 2){
     stop("X doesn't contain enough variables")
-  }
-  if (nbr_dim < 1){
-    stop("nbr_dim have to be superior than 1")
-  }
-  if(is.null(quanti.supp)==FALSE){
-    test=TRUE
-    for (i in 1:quanti.supp){
-      if(is.factor(quanti.supp[,i])==FALSE){
-        test=FALSE
-      }
-    }
-    if(test==FALSE){
-      stop("index quali_supp is not factor")
-    }
   }
   res.mca <- MCA (X,graph = FALSE,quanti.sup = quanti.supp)
   ##Valeurs propres
   eig.val <- get_eigenvalue(res.mca)
-  graph_eig<-fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 100))                          
-  # Description de la dimension
-  res.desc <- dimdesc(res.mca, axes = 1:nbr_dim)#fonction dimdesc() [dans FactoMineR]
+  print(fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 100)))                          
   
-  #création de l'instance
+  nb_dim<-readline(prompt="How many axes do you want to keep ? " )
+  nb_dim<-as.integer(nb_dim)
+  
+  #Tableau var
+  var<-tab(get_mca_var(res.mca),nb_dim)
+  
+  #Tableau individu
+  ind<-tab(get_mca_ind(res.mca),nb_dim)
+  
+  # Description de la dimension
+  res.desc <- dimdesc(res.mca, axes = 1:nb_dim)
+  desc <- desc.dim(res.desc,nb_dim)
+  
+  #creation de l'instance
   instance <- list()
   instance$eig.values<-eig.val
-  instance$eig.graph<-graph_eig
-  instance$var.tab <- tab.var(get_mca_var(res.mca),nbr_dim)
-  instance$desc_dim<-desc.dim(res.desc,nbr_dim)
+  instance$var.tab <- var
+  instance$ind.tab<-ind
+  instance$desc.dim<-desc
   if(is.null(quanti.supp)==FALSE){
     instance$quanti.supp<-res.mca$quanti
   }
-  class(instance) <- "ACM_val"
+  class(instance) <- c("ACM_val","list ")
+  
+  if(!is.null(graph)){
+    cramer<-as.numeric(v.cramer(y,X)[,2])
+    plot.ACM_val(res.mca,y,cramer,quanti.supp)
+  }
   #renvoyer le résultat
   return(instance)
 }
 
-ACM_graph<-function(X,y,dim1,dim2,quanti.supp=NULL){
-  if (length(X) < 2){
-    stop("X doesn't contain enough variables")
-  }
-  if (length(y)!=nrow(X)){
-    stop("X and y doesn't have the same length")
-  }
-  if(is.null(quanti.supp)==FALSE){
-    test=TRUE
-    for (i in 1:quanti.supp){
-      if(is.factor(quanti.supp[,i])==FALSE){
-        test=FALSE
-      }
-    }
-    if(test==FALSE){
-      stop("index quali_supp is not factor")
-    }
-  }
-  res.mca <- MCA (X,graph = FALSE,quanti.sup = quanti.supp)
-
+plot.ACM_val<-function(x,y, cramer,quanti.supp,axes = c(1, 2)){
   #Graphique des variables colorés selon le v de cramer
-  cramer<-as.numeric(v.cramer(y,X)[,2])
-  graph1<-fviz_mca_var (res.mca, choice="mca.cor",col.var = cramer,
-                gradient.cols = c("blue", "yellow", "red"),
-                legend.title = "V de Cramer",
-                repel = TRUE,axes = c(dim1, dim2))
+  
+  print(fviz_mca_var (x, choice="mca.cor",col.var = cramer,
+                        gradient.cols = c("blue", "yellow", "red"),
+                        legend.title = "V de Cramer",
+                        repel = TRUE,axes = axes))
+  
+
+  print(corrplot(x$var$cos2, is.corr=FALSE))# graphique du Cos2 des points colonnes sur tous les axes
+  print(corrplot(x$var$contrib, is.corr=FALSE))# graphique de la contributions des points colonnes sur tous les axes
+  
   #Individus colorié selon classes
-  graph2<-fviz_mca_ind (res.mca,
-                label = "none", # masquer le texte des individus
-                habillage = y, # colorer par groupes
-                
-                addEllipses = TRUE, ellipse.type = "confidence",
-                ggtheme = theme_minimal (),axes = c(dim1, dim2))
+  print(fviz_mca_ind (x,
+                        label = "none", # masquer le texte des individus
+                        habillage = y, # colorer par groupes
+                        
+                        addEllipses = TRUE, ellipse.type = "confidence",
+                        ggtheme = theme_minimal (),axes = axes))
   if(is.null(quanti.supp)==FALSE){
     #Quanti supp
-    graph3<-fviz_mca_var(res.mca, choice = "quanti.sup",
-                 ggtheme = theme_minimal())
+    print(fviz_mca_var(x, choice = "quanti.sup",
+                         ggtheme = theme_minimal(),axes=axes))
   }
   
   
-  #création de l'instance
-  instance <- list()
-  instance$var_cramer<-graph1
-  instance$ind_class<-graph2
-  if(is.null(quanti.supp)==FALSE){
-    instance$quanti.supp<-graph3
-  }
-  class(instance) <- "ACM_graph"
-  #renvoyer le résultat
-  return(instance)
 }
 
-res1<-ACM_val(data,2)
-res2<-ACM_graph(data,classe,1,2)
+print.ACM_val <- function (x, file = NULL, sep = ";", ...){
+  res.mca <- x
+  if (!inherits(res.mca, "ACM_val")) stop("non convenient data")
+  cat("**Results Mutltivarial Analysis using PCA**\n")
+  cat("*The results are available in the following objects:\n\n")
+  res <- array("", c(24, 2), list(1:24, c("name", "description")))
+  res[1, ] <- c("eig.values", "eigenvalues")
+  res[2, ] <- c("$var.tab", "results for the variables")
+  res[3, ] <- c("$ind.tab", "results for the individus")
+  res[4, ] <- c("$desc.dim", "description of the dimension")
+  indice <- 5
+  if (!is.null(res.mca$quanti.sup)){
+    res[indice, ] <- c("$quanti.supp", "results for the supplementary numerical variables")
+  }
+  print(res[1:indice,])
+  if (!is.null(file)) {
+    write.infile(res.mca,file = file, sep=sep)
+    print(paste("All the results are in the file",file))
+  }
+}
+
+res1<-ACM_val(data,classe,graph=TRUE)
 
 
-
-
+print(res1)
 
 res.mca <- MCA (data,graph = FALSE)
 #Graphique des classes par variables a coder
