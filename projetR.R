@@ -165,7 +165,10 @@ c=NULL
 active_variables_clusters = NULL
 active_variables = NULL
 
-val_test <- function(active_variables, clusters, show_graph=TRUE) {
+#test_value <- function(active_variables, clusters, show_graph=TRUE)
+#corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) 
+#effect_size <- function(active_variables, clusters)
+test_value <- function(active_variables, clusters, show_graph=TRUE) {
   if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
   } else if (is.vector(clusters)==FALSE) {
@@ -252,7 +255,7 @@ val_test <- function(active_variables, clusters, show_graph=TRUE) {
 
 #valeurs propres :  Plus la valeur de la variable est elevee plus elle contribue a la constitution des groupes
 #test:
-val_test(fromage[,-1], groupes.cah, show_graph = TRUE)
+test_value(fromage[,-1], groupes.cah, show_graph = TRUE)
 
 
 #graph etoile/spider:
@@ -274,7 +277,7 @@ full_table %>% ggplot(aes(x=key, y=vt, group=clusters, color=factor(clusters))) 
 
 
 #################rapport de correlation
-rapp_corr <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) {
+corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) {
   if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
   } else if (is.vector(clusters)==FALSE) {
@@ -339,7 +342,7 @@ rapp_corr <- function(active_variables, clusters, show_graph=TRUE, show_conditio
   }
 }
 #test :
-rapp_corr(fromage[,-1], groupes.cah)
+corr_coef(fromage[,-1], groupes.cah)
 
 #tableau rapport ocrr : Il represente la proportion de variance expliquee par les groupes pour chaque variable.
 #Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes
@@ -371,13 +374,7 @@ effect_size <- function(active_variables, clusters) {
       summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length)) %>%
       select_if(function(x) is.numeric(x))
     
-    sd1 <- active_variables_sd[j,i] %>% as.numeric()
-    
-    sd2 <- active_variables_clusters %>%
-      filter(clusters != j) %>%
-      summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
-      select_if(function(x) is.numeric(x)) %>%
-      select(,i) %>% as.numeric()
+
     
     
     #j = k  ::: i = col
@@ -389,6 +386,14 @@ effect_size <- function(active_variables, clusters) {
     
     for(j in 1:k) {
       for(i in 1:c) {
+        sd1 <- active_variables_sd[j,i] %>% as.numeric()
+        
+        sd2 <- active_variables_clusters %>%
+          filter(clusters != j) %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+          select_if(function(x) is.numeric(x)) %>%
+          select(,i) %>% as.numeric()
+        
         es_d[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/sqrt((sd1^2 + sd2^2)/2) )
       }
     }
@@ -401,6 +406,14 @@ effect_size <- function(active_variables, clusters) {
     colnames(es_g)<- colnames(active_variables)
     for(j in 1:k) {
       for(i in 1:c) {
+        sd1 <- active_variables_sd[j,i] %>% as.numeric()
+        
+        sd2 <- active_variables_clusters %>%
+          filter(clusters != j) %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+          select_if(function(x) is.numeric(x)) %>%
+          select(,i) %>% as.numeric()
+        
         es_g[j,i] <- as.numeric((cluster_mean[j,i] - cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric())/sqrt(((n1-1)*sd1^2+(n2-1)*sd2^2)/(n1+n2-2)))
       }
     }
@@ -488,6 +501,7 @@ effect_size <- function(active_variables, clusters) {
     normality_test <- shapiro.test(var_clusters$value)
     
     results <- list("Displaying density and normality test of " , variable, normality_test)
+    
     return(results)
     } else {}
   }
