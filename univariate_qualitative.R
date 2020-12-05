@@ -75,7 +75,7 @@ v.cramer <- function(active_variables, clusters, digits=5){
     }
     
     vec.cramer=setNames(cramer_val,cramer_active_variables)
-    return(vec.cramer)
+    return(list(vec.cramer))
     
     
     #We calculate the cramer's v if only one qualitative variable has been passed as a parameter
@@ -84,7 +84,7 @@ v.cramer <- function(active_variables, clusters, digits=5){
       khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
       dim = min(nrow(contingence),ncol(contingence)) - 1
       v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
-      return(v_cramer)
+      return(list(v_cramer))
     }
 }
 
@@ -111,7 +111,7 @@ l.profil <- function(active_variables, clusters, digits=2){
     tab=cbind(tab, Total = apply(tab,1,sum))
     tab = as.table(tab)
     names(dimnames(tab)) = name
-    return(tab)
+    return(list(tab))
   
     #Tests if many variables are passed in parameter
     } else if(class(active_variables) == "data.frame"){
@@ -152,7 +152,7 @@ c.profil <- function(active_variables, clusters, digits=2){
     tab=rbind(tab, Total = apply(tab,2,sum))
     tab = as.table(tab)
     names(dimnames(tab)) = name
-    return(tab)
+    return(list(tab))
  
     #Tests if many variables are passed in parameter
     } else if(class(active_variables) == "data.frame"){
@@ -208,7 +208,7 @@ h.value.test <- function(active_variables, clusters, digits=4){
             geom_hline(aes(yintercept = 0.5,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.8,colour = "large value"),linetype = 1, size=1.5)+
             geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3))
-    return(results)
+    return(list(results))
     
     #Tests if many variables are passed in parameter
   }else if(class(active_variables) == "data.frame"){
@@ -280,7 +280,7 @@ phi.value.test <- function(active_variables, clusters, digits=4){
             geom_hline(aes(yintercept = 0.3,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.5,colour = "large value"),linetype = 1, size=1.5)+
             geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3))
-    return(results)
+    return(list(results))
   
     #Tests if many variables are passed in parameter
   }else if(class(active_variables) == "data.frame"){
