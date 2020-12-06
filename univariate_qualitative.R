@@ -37,7 +37,7 @@ quali_caracterisation <- function(active_variables, clusters){
 
 
 
-v.cramer <- function(active_variables, clusters, digits=5){
+v.cramer <- function(active_variables, clusters, show_graph=TRUE, digits=5){
   
   #Tests if the variables passed in parameter are in the form of data.frame
   if(class(active_variables) == "data.frame"){
@@ -64,27 +64,28 @@ v.cramer <- function(active_variables, clusters, digits=5){
     data <- as.data.frame(matrix(as.numeric(tab_cramer[,2]), ncol=nrow(tab_cramer)))
     colnames(data) = tab_cramer[,1]
     data = rbind(rep(1,length(tab_cramer)),rep(0,length(tab_cramer)),data)
-    
+   
+    if(show_graph==TRUE){
     #Radarchart only if the number of variables is greater than 2
-    if(length(cramer_active_variables) > 2){
-      print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
-    
-    #Otherwise, we print a barplot
-    }else{
-      tab_cramer = as.data.frame(tab_cramer)
-      tab_cramer[,2] = as.numeric(tab_cramer[,2])
-      print(ggplot(data=tab_cramer, aes(x=cramer_active_variables, y=cramer_val)) +
-              geom_bar(stat="identity", position=position_dodge(), width=0.75, fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Cramer's v by variables")+
-              scale_y_continuous(limits=c(0,1))+
-              geom_text(aes(label=cramer_val), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
-              labs(x = "Variables", y = "Cramer's value")+
-              theme_minimal(base_size = 12) +
-              theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
-                    axis.title.y=element_text(size=rel(1.4)),
-                    axis.title.x=element_text(size=rel(1.4)),
-                    panel.background = element_rect(fill = NA, color = "gray40")))
+      if(length(cramer_active_variables) > 2){
+        print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
+      
+      #Otherwise, we print a barplot
+      }else{
+        tab_cramer = as.data.frame(tab_cramer)
+        tab_cramer[,2] = as.numeric(tab_cramer[,2])
+        print(ggplot(data=tab_cramer, aes(x=cramer_active_variables, y=cramer_val)) +
+                geom_bar(stat="identity", position=position_dodge(), width=0.75, fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Cramer's v by variables")+
+                scale_y_continuous(limits=c(0,1))+
+                geom_text(aes(label=cramer_val), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
+                labs(x = "Variables", y = "Cramer's value")+
+                theme_minimal(base_size = 12) +
+                theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                      axis.title.y=element_text(size=rel(1.4)),
+                      axis.title.x=element_text(size=rel(1.4)),
+                      panel.background = element_rect(fill = NA, color = "gray40")))
+      }
     }
-    
     vec.cramer=setNames(cramer_val,cramer_active_variables)
     return(list("Cramer's v", vec.cramer))
     
@@ -101,7 +102,7 @@ v.cramer <- function(active_variables, clusters, digits=5){
 
 
 
-l.profil <- function(active_variables, clusters, digits=2){
+l.profil <- function(active_variables, clusters, show_graph=TRUE, digits=2){
   
   #Tests if only one variable passed in parameter
   if(is.factor(active_variables) || is.character(active_variables)){
@@ -110,18 +111,19 @@ l.profil <- function(active_variables, clusters, digits=2){
     tab=table(clusters,active_variables)
     name = names(dimnames(tab))
     
-    #Print a barplot for the contingency table
-    print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class") +
-            labs(x = "Variables", y = "Proportion")+
-            scale_y_continuous(expand=c(0.004,0)) +
-            theme_minimal(base_size = 12) +
-            theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
-            axis.title.y=element_text(size=rel(1.4)),
-            axis.title.x=element_text(size=rel(1.4)),
-            panel.background = element_rect(fill = NA, color = "gray40")) +
-            facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
-    
+    if(show_graph==TRUE){
+      #Print a barplot for the contingency table
+      print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=active_variables, y=Freq)) +
+              geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Proportion by modalities according to class") +
+              labs(x = "Variables", y = "Proportion")+
+              scale_y_continuous(expand=c(0.004,0)) +
+              theme_minimal(base_size = 12) +
+              theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+              axis.title.y=element_text(size=rel(1.4)),
+              axis.title.x=element_text(size=rel(1.4)),
+              panel.background = element_rect(fill = NA, color = "gray40")) +
+              facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    }
     #Add a row Ensemble which is the sum of each columns 
     tab=rbind(tab,Ensemble = apply(tab,2,sum))
     #We put the values in percentage
@@ -150,7 +152,7 @@ l.profil <- function(active_variables, clusters, digits=2){
 
 
 
-c.profil <- function(active_variables, clusters, digits=2){
+c.profil <- function(active_variables, clusters, show_graph=TRUE, digits=2){
   
   #Tests if only one variable passed in parameter
   if(is.factor(active_variables) || is.character(active_variables)){
@@ -159,9 +161,10 @@ c.profil <- function(active_variables, clusters, digits=2){
     tab=table(clusters,active_variables)
     name = names(dimnames(tab))
     
+    if(show_graph==TRUE){
     #Print a barplot for the contingency table
-    print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class") +
+    print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=active_variables, y=Freq)) +
+            geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Proportion by modalities according to class") +
             labs(x = "Variables", y = "Proportion")+
             scale_y_continuous(expand=c(0.004,0)) +
             theme_minimal(base_size = 12) +
@@ -170,6 +173,7 @@ c.profil <- function(active_variables, clusters, digits=2){
                   axis.title.x=element_text(size=rel(1.4)),
                   panel.background = element_rect(fill = NA, color = "gray40")) +
             facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    }
     
     #Add a row Ensemble which is the sum of each rows
     tab=cbind(tab,Ensemble = apply(tab,1,sum))
@@ -198,7 +202,7 @@ c.profil <- function(active_variables, clusters, digits=2){
 }
 
 
-h.value.test <- function(active_variables, clusters, digits=4){
+h.value.test <- function(active_variables, clusters, show_graph=TRUE, digits=4){
   
   #Tests if only one variable passed in parameter
   if(is.factor(active_variables) || is.character(active_variables)){
@@ -228,9 +232,10 @@ h.value.test <- function(active_variables, clusters, digits=4){
     }
     results[,3] = as.numeric(results[,3])
     
+    if(show_graph==TRUE){
     #We print our results in a barplot with threshold values
-    print(ggplot(data=results, aes(x=modality, y=h, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("h value by modalities according to class")+
+    print(ggplot(data=results, aes(x=modality, y=h)) +
+            geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("h value by modalities according to class")+
             geom_hline(aes(yintercept = 0.2,linetype = "small value"),colour = "yellow", size=1)+
             geom_hline(aes(yintercept = 0.5,linetype = "medium value"),colour = "orange", size=1)+
             geom_hline(aes(yintercept = 0.8,linetype = "large value"),colour = "darkred", size=1)+
@@ -243,12 +248,14 @@ h.value.test <- function(active_variables, clusters, digits=4){
                   axis.title.x=element_text(size=rel(1.4)),
                   panel.background = element_rect(fill = NA, color = "gray40"))+
             facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    }
     
     print(results%>%  as.data.frame() %>% formattable(align = c("c","c", "r"),
            list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
           area(col = 3) ~ formatter("span",style = x ~ style(font.weight = "bold",color = ifelse( x > 0.8,  "#00CC00",
                                                                                           ifelse(x > 0.5, "#FF8000",
                                                                                           ifelse(x>0.2,"#FF0000", "black"))))))))
+  
     
     return(list("h value", results))
     
@@ -280,7 +287,7 @@ sign_h_value <- function(tab){
   return(h)
 }
 
-phi.value.test <- function(active_variables, clusters, digits=4){
+phi.value.test <- function(active_variables, clusters, show_graph=TRUE, digits=4){
   
   #Tests if only one variable passed in parameter
   if(is.factor(active_variables) || is.character(active_variables)){
@@ -315,9 +322,10 @@ phi.value.test <- function(active_variables, clusters, digits=4){
     }
     results[,3] = as.numeric(results[,3])
     
+    if(show_graph==TRUE){
     #We print our results in a barplot with threshold values
-    print(ggplot(data=results, aes(x=modality, y=phi, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Phi value by modalities according to class")+
+    print(ggplot(data=results, aes(x=modality, y=phi)) +
+            geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Phi value by modalities according to class")+
             geom_hline(aes(yintercept = 0.1,linetype = "small value"),colour = "yellow", size=1)+
             geom_hline(aes(yintercept = 0.3,linetype = "medium value"),colour = "orange", size=1)+
             geom_hline(aes(yintercept = 0.5,linetype = "large value"),colour = "darkred", size=1)+
@@ -330,7 +338,7 @@ phi.value.test <- function(active_variables, clusters, digits=4){
                   axis.title.x=element_text(size=rel(1.4)),
                   panel.background = element_rect(fill = NA, color = "gray40"))+
             facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
-    
+    }
     
     print(results%>%  as.data.frame() %>% formattable(align = c("c","c", "r"),
           list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
