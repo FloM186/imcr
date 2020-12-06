@@ -5,33 +5,29 @@ library(ggpubr)
 #############   data test fromage#######
 fromage <- read.delim("C:/Users/moret/Downloads/_documents/GitHub/projetR/dataset test/fromage.txt")
 str(fromage)
-
-#centrage reduction des donnees
-#pour eviter que variables à forte variance pèsent indûment sur les resultats
 fromage.cr <- scale(fromage[,-1],center=T,scale=T)
-#matrice des distances entre individus
 d.fromage <- dist(fromage.cr)
-#CAH - critère de Ward
-#method = « ward.D2 » correspond au vrai critère de Ward
-#utilisant le carre de la distance
 cah.ward <- hclust(d.fromage,method="ward.D2")
-#affichage dendrogramme
-plot(cah.ward)
-#dendrogramme avec materialisation des groupes
-rect.hclust(cah.ward,k=4)
-#decoupage en 4 groupes
 groupes.cah <- cutree(cah.ward,k=4)
-#liste des groupes
-print(sort(groupes.cah))
-groupes.cah
 
 
+#test
 test_value(fromage[,-1], groupes.cah, show_graph = TRUE)
-
 corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)
-
 effect_size(fromage[,-1], groupes.cah)
 
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
 
 #Function to calculate test value
@@ -565,3 +561,103 @@ effect_size <- function(active_variables, clusters, digits=3) {
 }
 
 
+#####################brouillon
+
+
+quanti_caracterisation <- function(active_variables, clusters){
+  
+  #instance creation
+  instance <- list()
+  instance$test_value <- test_value(active_variables, clusters)
+  instance$corr_coef <- corr_coef(active_variables, clusters)
+  instance$effect_size <- effect_size(active_variables, clusters)
+  class(instance) <- "univariate quantitative"
+  return(instance)
+}
+quanti_caracterisation(fromage[,-1], groupes.cah)
+
+
+#Function to know the differents elements of ACP_tab's object
+print.effect_size<- function (x, file = NULL, sep = ";"){
+  if (!inherits(x, "effect_size")) stop("non convenient data")
+  cat("**Results Mutltivarial Analysis using PCA**\n")
+  cat("*The results are available in the following objects:\n\n")
+  res <- array("", c(24, 2), list(1:24, c("name", "description")))
+  
+  #Description of the different elements
+  res[1, ] <- c("eig.values", "eigenvalues")
+  res[2, ] <- c("$var.tab", "results for the variables")
+  res[3, ] <- c("$ind.tab", "results for the individus")
+  indice <- 4
+  if (!is.null(x$quali.sup)){
+    res[indice, ] <- c("$quali.supp", "results for the supplementary categorical variables")
+  }
+  print(res[1:indice,])
+  
+  #Integration of the results in a file
+  if (!is.null(file)) {
+    write.infile(x,file = file, sep=sep)
+    print(paste("All the results are in the file",file))
+  }
+  
+}
+
+effect_size(fromage[,-1], groupes.cah)
+  
+  
+  
+  
+  #Function to know the differents elements of ACP_tab's object
+  print.ACP_tab <- function (x, file = NULL, sep = ";"){
+    if (!inherits(x, "ACP_tab")) stop("non convenient data")
+    cat("**Results Mutltivarial Analysis using PCA**\n")
+    cat("*The results are available in the following objects:\n\n")
+    res <- array("", c(24, 2), list(1:24, c("name", "description")))
+    
+    #Description of the different elements
+    res[1, ] <- c("eig.values", "eigenvalues")
+    res[2, ] <- c("$var.tab", "results for the variables")
+    res[3, ] <- c("$ind.tab", "results for the individus")
+    indice <- 4
+    if (!is.null(x$quali.sup)){
+      res[indice, ] <- c("$quali.supp", "results for the supplementary categorical variables")
+    }
+    print(res[1:indice,])
+    
+    #Integration of the results in a file
+    if (!is.null(file)) {
+      write.infile(x,file = file, sep=sep)
+      print(paste("All the results are in the file",file))
+    }
+    
+  }
+  
+  #Function to show the differents plots 
+  plot.ACP_tab<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
+    #Circle of correlation with the indice of Cramer
+    print(fviz_pca_var(res.pca, col.var = corr,
+                       gradient.cols = c("blue", "yellow", "red"),
+                       legend.title = "Coeff correlation",axes = axes) ) 
+    #Graph of the variables
+    var<-rbind(res.pca$var$coord,res.pca$quali.sup$coord)
+    b<-ggplot(as.data.frame(var),aes(x=var[,axes[1]], y=var[,axes[2]])) + 
+      geom_point() +
+      scale_fill_brewer(palette="BuPu")+ 
+      theme(legend.position="top", legend.justification=c(0,1))+
+      geom_text(label=rownames(var))+
+      theme_minimal(base_size = 12)+
+      ggtitle("Coordinates of the variable")+
+      labs(x = "Dim 1", y = "Dim 2")+
+      scale_x_continuous(expand=c(0.05,0.05))+
+      scale_y_continuous(expand=c(0.05,0.05))+
+      theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+            axis.title.y=element_text(size=rel(1.4)),
+            axis.title.x=element_text(size=rel(1.4)),
+            panel.background = element_rect(fill = NA, color = "gray40"))
+    print(b)
+    
+    
+    
+    
+    
+    

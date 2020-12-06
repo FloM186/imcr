@@ -186,6 +186,11 @@ active_variables = NULL
 #tableau rapport ocrr : Il represente la proportion de variance expliquee par les groupes pour chaque variable.
 #Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes
 
+#Tableau de corr : Il represente la proportion de variance
+#expliquee par les groupes pour chaque variable. Plus il est eleve,
+#plus la variance de la variable pourra etre expliquee par les groupes
+
+
 correler(fromage[,-1], groupes.cah)$test_value
 #"constructeur" pour classe S3
 correler <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means = TRUE){
