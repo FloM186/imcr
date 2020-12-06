@@ -115,7 +115,7 @@ l.profil <- function(active_variables, clusters, show_graph=TRUE, digits=2){
       #Print a barplot for the contingency table
       print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=active_variables, y=Freq)) +
               geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Proportion by modalities according to class") +
-              labs(x = "Variables", y = "Proportion")+
+              labs(x = "Modalities", y = "Proportion")+
               scale_y_continuous(expand=c(0.004,0)) +
               theme_minimal(base_size = 12) +
               theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
@@ -165,7 +165,7 @@ c.profil <- function(active_variables, clusters, show_graph=TRUE, digits=2){
     #Print a barplot for the contingency table
     print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=active_variables, y=Freq)) +
             geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Proportion by modalities according to class") +
-            labs(x = "Variables", y = "Proportion")+
+            labs(x = "Modalities", y = "Proportion")+
             scale_y_continuous(expand=c(0.004,0)) +
             theme_minimal(base_size = 12) +
             theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
@@ -241,7 +241,7 @@ h.value.test <- function(active_variables, clusters, show_graph=TRUE, digits=4){
             geom_hline(aes(yintercept = 0.8,linetype = "large value"),colour = "darkred", size=1)+
             scale_linetype_manual(name = "Thresholds", values=c(2,2,2),guide = guide_legend(override.aes = list(color = c("darkred", "orange","yellow"))))+
             geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
-            labs(x = "Variables", y = "h")+
+            labs(x = "Modalities", y = "h")+
             theme_minimal(base_size = 12) +
             theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
                   axis.title.y=element_text(size=rel(1.4)),
@@ -331,7 +331,7 @@ phi.value.test <- function(active_variables, clusters, show_graph=TRUE, digits=4
             geom_hline(aes(yintercept = 0.5,linetype = "large value"),colour = "darkred", size=1)+
             scale_linetype_manual(name = "Thresholds", values=c(2,2,2),guide = guide_legend(override.aes = list(color = c("darkred", "orange","yellow"))))+
             geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
-            labs(x = "Variables", y = "phi")+
+            labs(x = "Modalities", y = "phi")+
             theme_minimal(base_size = 12) +
             theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
                   axis.title.y=element_text(size=rel(1.4)),
