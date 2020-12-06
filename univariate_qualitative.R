@@ -71,11 +71,17 @@ v.cramer <- function(active_variables, clusters, digits=5){
     #Otherwise, we print a barplot
     }else{
       print(ggplot(data=as.data.frame(tab_cramer), aes(x=cramer_active_variables, y=cramer_val)) +
-              geom_bar(stat="identity", position=position_dodge()) + ggtitle("Cramer's v by variables"))
+              geom_bar(stat="identity", position=position_dodge(), width=0.75, fill="deepskyblue") + ggtitle("Cramer's v by variables")+
+              labs(x = "Variables", y = "Cramer's value")+
+              theme_minimal(base_size = 12) +
+              theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                    axis.title.y=element_text(size=rel(1.4)),
+                    axis.title.x=element_text(size=rel(1.4)),
+                    panel.background = element_rect(fill = NA, color = "gray40")))
     }
     
     vec.cramer=setNames(cramer_val,cramer_active_variables)
-    return(list(vec.cramer))
+    return(list("Cramer's v", vec.cramer))
     
     
     #We calculate the cramer's v if only one qualitative variable has been passed as a parameter
@@ -84,7 +90,7 @@ v.cramer <- function(active_variables, clusters, digits=5){
       khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
       dim = min(nrow(contingence),ncol(contingence)) - 1
       v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
-      return(list(v_cramer))
+      return(list("Cramer's v", v_cramer))
     }
 }
 
@@ -101,7 +107,15 @@ l.profil <- function(active_variables, clusters, digits=2){
     
     #Print a barplot for the contingency table
     print(ggplot(data=as.data.frame(round(prop.table(tab,1)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class"))
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class") +
+            labs(x = "Variables", y = "Proportion")+
+            scale_y_continuous(expand=c(0.004,0)) +
+            theme_minimal(base_size = 12) +
+            theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+            axis.title.y=element_text(size=rel(1.4)),
+            axis.title.x=element_text(size=rel(1.4)),
+            panel.background = element_rect(fill = NA, color = "gray40")) +
+            facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
     
     #Add a row Ensemble which is the sum of each columns 
     tab=rbind(tab,Ensemble = apply(tab,2,sum))
@@ -111,7 +125,7 @@ l.profil <- function(active_variables, clusters, digits=2){
     tab=cbind(tab, Total = apply(tab,1,sum))
     tab = as.table(tab)
     names(dimnames(tab)) = name
-    return(list(tab))
+    return(list("Row Profile Table", tab))
   
     #Tests if many variables are passed in parameter
     } else if(class(active_variables) == "data.frame"){
@@ -142,7 +156,15 @@ c.profil <- function(active_variables, clusters, digits=2){
     
     #Print a barplot for the contingency table
     print(ggplot(data=as.data.frame(round(prop.table(tab,2)*100,digits)), aes(x=active_variables, y=Freq, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class"))
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Proportion by modalities according to class") +
+            labs(x = "Variables", y = "Proportion")+
+            scale_y_continuous(expand=c(0.004,0)) +
+            theme_minimal(base_size = 12) +
+            theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                  axis.title.y=element_text(size=rel(1.4)),
+                  axis.title.x=element_text(size=rel(1.4)),
+                  panel.background = element_rect(fill = NA, color = "gray40")) +
+            facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
     
     #Add a row Ensemble which is the sum of each rows
     tab=cbind(tab,Ensemble = apply(tab,1,sum))
@@ -152,7 +174,7 @@ c.profil <- function(active_variables, clusters, digits=2){
     tab=rbind(tab, Total = apply(tab,2,sum))
     tab = as.table(tab)
     names(dimnames(tab)) = name
-    return(list(tab))
+    return(list("Column Profile Table", tab))
  
     #Tests if many variables are passed in parameter
     } else if(class(active_variables) == "data.frame"){
@@ -185,7 +207,7 @@ h.value.test <- function(active_variables, clusters, digits=4){
     
     #Creation of the data frame that will contain the results
     results = data.frame(NA, ncol=3, nrow = nbr_clusters*nbr_mod)
-    colnames(results) = c("class", "modality", "h")
+    colnames(results) = c("clusters", "modality", "h")
     
     #For each cluster and modalities of the variable, we calculate the test value h and store it in our data frame.
     cpt=1
@@ -202,13 +224,21 @@ h.value.test <- function(active_variables, clusters, digits=4){
     results[,3] = as.numeric(results[,3])
     
     #We print our results in a barplot with threshold values
-    print(ggplot(data=results, aes(x=modality, y=h, fill=class)) +
+    print(ggplot(data=results, aes(x=modality, y=h, fill=clusters)) +
             geom_bar(stat="identity", position=position_dodge()) + ggtitle("h value by modalities according to class")+
             geom_hline(aes(yintercept = 0.2,colour = "small value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.5,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.8,colour = "large value"),linetype = 1, size=1.5)+
-            geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3))
-    return(list(results))
+            geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
+            labs(x = "Variables", y = "h")+
+            theme_minimal(base_size = 12) +
+            theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                  axis.title.y=element_text(size=rel(1.4)),
+                  axis.title.x=element_text(size=rel(1.4)),
+                  panel.background = element_rect(fill = NA, color = "gray40"))+
+            facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    
+    return(list("h value", results))
     
     #Tests if many variables are passed in parameter
   }else if(class(active_variables) == "data.frame"){
@@ -251,7 +281,7 @@ phi.value.test <- function(active_variables, clusters, digits=4){
     
     #Creation of the data frame that will contain the results
     results = data.frame(NA, ncol=3, nrow = nbr_clusters*nbr_mod)
-    colnames(results) = c("class", "modality", "phi")
+    colnames(results) = c("clusters", "modality", "phi")
     
     #For each cluster and modalities of the variable, we calculate the test value phi and store it in our data frame.
     cpt=1
@@ -274,13 +304,20 @@ phi.value.test <- function(active_variables, clusters, digits=4){
     results[,3] = as.numeric(results[,3])
     
     #We print our results in a barplot with threshold values
-    print(ggplot(data=results, aes(x=modality, y=phi, fill=class)) +
+    print(ggplot(data=results, aes(x=modality, y=phi, fill=clusters)) +
             geom_bar(stat="identity", position=position_dodge()) + ggtitle("Phi value by modalities according to class")+
             geom_hline(aes(yintercept = 0.1,colour = "small value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.3,colour = "medium value"),linetype = 1, size=1.5)+
             geom_hline(aes(yintercept = 0.5,colour = "large value"),linetype = 1, size=1.5)+
-            geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3))
-    return(list(results))
+            geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
+            labs(x = "Variables", y = "phi")+
+            theme_minimal(base_size = 12) +
+            theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                  axis.title.y=element_text(size=rel(1.4)),
+                  axis.title.x=element_text(size=rel(1.4)),
+                  panel.background = element_rect(fill = NA, color = "gray40"))+
+            facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    return(list("phi value", results))
   
     #Tests if many variables are passed in parameter
   }else if(class(active_variables) == "data.frame"){
