@@ -14,6 +14,7 @@ library(clusterCrit)
 library(ClustOfVar)
 library(ggpubr)
 library(factoextra)
+library(formattable)
 library(ade4)
 library(ggpubr)
 #############   data test iris#######
@@ -156,7 +157,24 @@ right_join(right_join(meantab %>% mutate(cluster=1:4) %>%
 #amplitudeLA(A transformer)/(amplitudeLA/amplitudeRA) + premierevaleurRA
 #newydataright = (ydata --6)*(412/12)
 #(ydata - premierevaleurRA )*(amplitudeLA/amplitudeRA)
+data <- c("es_d","es_g", "u3","u2","u1","besd","cles")
+title <- c("Cohen's d","Hedge's g","U3","U2","U1","BESD","CLES")
+for(i in 1:length(data)) {
+  print(get(data[i]) %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+          mutate(paste("clusters ","(",title[i],")", sep = "") = 1:k)[1] %>% select(paste("clusters ","(",title[i],")", sep = "")[1], everything()) %>%
+          formattable(align = c("l",rep("r", c )),
+                      list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                           area(col = 2:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+}
 
+
+get(data[1])  
+as.character(paste("clusters ","(",title[4],")", sep = ""))
+title[1]
+class(paste("clusters ","(",title[j],")", sep = ""))
+View(paste("clusters ","(",title[j],")", sep = ""))
+
+paste("clusters ","(",title[j],")")
 
 ##
 #############   fonctions du projet ###########
@@ -165,10 +183,27 @@ c=NULL
 active_variables_clusters = NULL
 active_variables = NULL
 
+
+
+correler(fromage[,-1], groupes.cah)$test_value
+#"constructeur" pour classe S3
+correler <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means = TRUE){
+  #création de l'instance
+  instance <- list()
+  instance$test_value <- test_value(active_variables, clusters)
+  instance$corr_coe <- corr_coef(active_variables, clusters)
+  instance$effect_size  <- effect_size (active_variables, clusters)
+  class(instance) <- "univariate quantitative"
+  return(instance)
+}
+
+
 #test_value <- function(active_variables, clusters, show_graph=TRUE)
 #corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) 
 #effect_size <- function(active_variables, clusters)
-test_value <- function(active_variables, clusters, show_graph=TRUE) {
+
+
+test_value <- function(active_variables, clusters, show_graph=TRUE, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
   } else if (is.vector(clusters)==FALSE) {
@@ -208,14 +243,13 @@ test_value <- function(active_variables, clusters, show_graph=TRUE) {
       }
     }
     
-    test_value <- test_value %>% mutate(clusters= 1:k) %>% select(clusters, everything())
-    
-    full_table<-right_join(
+   full_table<-right_join(
       right_join(
         cluster_mean %>% mutate(clusters=1:k) %>% gather(key, mean, -clusters),
-        cluster_sd  %>% mutate(clusters=1:k) %>% gather(key, sd, -clusters)
-        ), test_value %>% gather(key, vt, -clusters))
+        cluster_sd  %>% mutate(clusters=1:k) %>% gather(key, sd, -clusters),
+        by=c("clusters","key")), test_value %>% mutate(clusters= 1:k) %>% select(clusters, everything()) %>% gather(key, vt, -clusters),by=c("clusters","key"))
     
+    options(dplyr.summarise.inform = FALSE)
     barheight <- full_table %>% group_by(key, clusters) %>% summarise(msd = mean + sd)
     
     min_axis_vt<-min(pretty(full_table$vt))
@@ -226,6 +260,8 @@ test_value <- function(active_variables, clusters, show_graph=TRUE) {
       summarise(max1= max(msd), maxtot=round(max1+max1*(1/40))) %>% select(maxtot) %>% as.numeric()
     
     scale_second_axis<-max_axis_y/amplitude_vt
+    
+
     
     if(show_graph==TRUE) {
       print(full_table %>%
@@ -244,32 +280,21 @@ test_value <- function(active_variables, clusters, show_graph=TRUE) {
                     panel.background = element_rect(fill = NA, color = "gray40")) +
               facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))} else {}
     
+    print(test_value %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (test value)"= 1:k) %>% select("clusters (test value)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
+    results <- list("Eigenvalues table:" = test_value %>% mutate(clusters= 1:k) %>% select(clusters, everything()) %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
+    return(results)
     
 
-    results <- list("Eigenvalues table:", test_value)
-    return(results)
     
   }
 }
 
-
-#valeurs propres :  Plus la valeur de la variable est elevee plus elle contribue a la constitution des groupes
-#test:
 test_value(fromage[,-1], groupes.cah, show_graph = TRUE)
-
-
-#graph etoile/spider:
-#ne marche pas encore...
-#https://webdevdesigner.com/q/creating-radar-chart-a-k-a-star-plot-spider-plot-using-ggplot2-in-r-65407/
-full_table %>% ggplot(aes(x=key, y=vt, group=clusters, color=factor(clusters))) + 
-  geom_point() + 
-  geom_line(size=2) + 
-  xlab("Decils") + 
-  ylab("% difference in nÂº Pk") + 
-  #ylim(-50,25) + ggtitle("CL")  + 
-  #geom_line(aes(yintercept=0), lwd=1, lty=2) + 
-  #scale_x_discrete(limits=c(orden_deciles)) +
-  coord_polar()
 
 
 
@@ -277,7 +302,7 @@ full_table %>% ggplot(aes(x=key, y=vt, group=clusters, color=factor(clusters))) 
 
 
 #################rapport de correlation
-corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE) {
+corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
   } else if (is.vector(clusters)==FALSE) {
@@ -314,14 +339,14 @@ corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditio
     colnames(sce) = colnames(active_variables)
     
     for(j in 1:k){
-      for(i in 1:ncol(fromage[,-1])) {
+      for(i in 1:ncol(active_variables)) {
         sce[j,i]<-  as.numeric(cluster_n[j,i]*(cluster_mean[j,i] - active_variables_mean[i])^2)
       }
     }
     sce <-sce %>% summarise_all(sum)
     
     rcor <- sce/sct
-    
+    options(pillar.sigfig = 4)
     if(show_graph==TRUE) {
       print(rcor %>% gather(key, value) %>%
               ggplot(aes(x=key, y=value))+
@@ -333,23 +358,34 @@ corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditio
                     axis.title.y=element_text(size=rel(1.4)),
                     axis.title.x=element_text(size=rel(1.4)),
                     panel.background = element_rect(fill = NA, color = "gray40")))} else {}
-    if(show_conditionnal_means==TRUE){results <- list("Conditionnal means table", cluster_mean,
-      "Correlation coefficients table", rcor)} else {
-                                                         results <- list("Conditionnal means table",
-                                                                         rcor)}
+    if(show_conditionnal_means==TRUE){results <- list("Conditionnal means table"= cluster_mean %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+      "Correlation coefficients table" = rcor %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
+    
+    print(cluster_mean %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (cond. means)"= 1:k) %>% select("clusters (cond. means)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
+    } else {
+    results <- list("Conditionnal means table" = rcor)}
+    
+    print(rcor %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)) %>%
+            mutate("correlation coefficient"= "value") %>% select("correlation coefficient", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
     
     return(results)
   }
 }
-#test :
-corr_coef(fromage[,-1], groupes.cah)
 
+corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)
 #tableau rapport ocrr : Il represente la proportion de variance expliquee par les groupes pour chaque variable.
 #Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes
 ################# effect size
 
-
-effect_size <- function(active_variables, clusters) {
+effect_size <- function(active_variables, clusters, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) {
     print("Active variables must be numeric")
   } else if (is.vector(clusters)==FALSE) {
@@ -418,6 +454,52 @@ effect_size <- function(active_variables, clusters) {
       }
     }
     
+    #BESD
+    besd <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(besd)<- colnames(active_variables)
+    besd
+    for(j in 1:k) {
+      for(i in 1:c) {
+        s <- active_variables_clusters %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+          select_if(function(x) is.numeric(x)) %>% select(,i) %>% as.numeric()
+        n <- active_variables_clusters %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(length)) %>%
+          select_if(function(x) is.numeric(x)) %>% select(,i) %>% as.numeric()
+        m <- cluster_mean[-j,] %>% summarise_all(mean) %>% select(i) %>% as.numeric()
+        
+        besd[j,i] <- as.numeric(
+          ((cluster_mean[j,i] - m )/s) * sqrt( (n1*n2)/(n*(n-1)) ) 
+        )
+      }
+    }
+    
+    #CLES
+    cles_temp <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(cles_temp)<- colnames(active_variables)
+    for(j in 1:k) {
+      for(i in 1:c) {
+        sd1 <- active_variables_sd[j,i] %>% as.numeric()
+        
+        sd2 <- active_variables_clusters %>%
+          filter(clusters != j) %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(sd)) %>%
+          select_if(function(x) is.numeric(x)) %>%
+          select(,i) %>% as.numeric()
+        
+        m1 <- cluster_mean[j,i] %>% as.numeric()
+        m2 <- active_variables_clusters %>%
+          filter(clusters != j) %>%
+          summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean)) %>%
+          select_if(function(x) is.numeric(x)) %>% 
+          select(,i) %>% as.numeric()
+        
+        cles_temp[j,i] <- as.numeric( abs(m1-m2)/sqrt(sd1^2+sd2^2) )
+        
+      }
+    }
+    
+    cles <- sapply(cles_temp, pnorm)
     
     #U3
     u3 <- sapply(es_g, pnorm)
@@ -428,13 +510,56 @@ effect_size <- function(active_variables, clusters) {
     #U1   (2u2 - 2 / u2)
     u1 <- ((2*u2) -1)/u2
     
-    print(list("Cohen's d",
-               es_d, "Hedge's g", es_g, "U3 value table", u3, "U2 value table", u2, "U1 value table", u1))
+    print(list("Cohen's d" = es_d %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "Hedge's g" = es_g %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "U3 value table" = u3 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "U2 value table"=  u2 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "U1 value table" = u1 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "Binomial effect size display" = besd %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+               "Common language effect size"= cles %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))))
+    
+    
+    print(es_d %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (Cohen's d)"= 1:k) %>% select("clusters (Cohen's d)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
+  print(es_g %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (Hedge's g)"= 1:k) %>% select("clusters (Hedge's g)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    print(u3 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (U3)"= 1:k) %>% select("clusters (U3)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    print(u2%>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (U2)"= 1:k) %>% select("clusters (U2)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    print(u1 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (U1)"= 1:k) %>% select("clusters (U1)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    print(besd %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (BESD)"= 1:k) %>% select("clusters (BESD)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    print(cles %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (CLES)"= 1:k) %>% select("clusters (CLES)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
     
     variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: ")
-    inspect_cluster <- as.character(readline("What is the number of the cluster you to inspect ? Enter a name or skip by pressing enter: "))
-    if(variable != "" & inspect_cluster!="" ) {
-      
+    
+    if(variable != "") {
+    inspect_cluster <- as.character(readline("What is the number of the cluster you to inspect ? Enter a name or leave empty to get all cluster comparisons: "))
     var_clusters <-active_variables_clusters %>% gather(key, value, -clusters) %>% filter(key==variable)
    
     df = data.frame()
@@ -477,7 +602,7 @@ effect_size <- function(active_variables, clusters) {
             panel.background = element_rect(fill = NA, color = "gray40"),
             legend.position="bottom")
     
-
+    if(inspect_cluster != "") {
     df_clust <- data.frame(x= density(var_clusters[which(var_clusters$clusters==inspect_cluster),]$value)$x, y=density(var_clusters[which(var_clusters$clusters==inspect_cluster),]$value)$y ) %>% mutate(clusters = inspect_cluster)
     df_clust_other <- data.frame(x= density(var_clusters[which(var_clusters$clusters!=inspect_cluster),]$value)$x, y= density(var_clusters[which(var_clusters$clusters!=inspect_cluster),]$value)$y ) %>% mutate(clusters="others")
     
@@ -487,7 +612,7 @@ effect_size <- function(active_variables, clusters) {
       scale_fill_brewer(palette="Dark2")+
       scale_color_brewer(palette="Dark2")+
       scale_y_continuous(expand=c(0.004,0))+
-      labs(x = "", y = "clusters selected versus others")+
+      labs(x = "", y = "Selected cluster versus others")+
       theme_minimal(base_size = 12) +
       theme(axis.title.y=element_text(size=rel(1.4)),
             axis.title.x=element_text(size=rel(1.4)),
@@ -496,16 +621,44 @@ effect_size <- function(active_variables, clusters) {
     
     print(ggarrange(graph_density_total, graph_density_clusters, graph_density_cluster_vs_other,
               labels = c("", "", ""),
-              ncol = 2, nrow=2))
+              ncol = 2, nrow=2)) } else {
+                
+                
+      print(ggarrange(graph_density_total, graph_density_clusters,
+                                labels = c("", ""),
+                                ncol = 2)) 
+    
+      for( i in factor(1:k)) {
+        
+        df_clust <- data.frame(x= density(var_clusters[which(var_clusters$clusters==i),]$value)$x, y=density(var_clusters[which(var_clusters$clusters==i),]$value)$y ) %>% mutate(clusters = i)
+        df_clust_other <- data.frame(x= density(var_clusters[which(var_clusters$clusters!=i),]$value)$x, y= density(var_clusters[which(var_clusters$clusters!=i),]$value)$y ) %>% mutate(clusters="others")
+        
+        graph_density_cluster_vs_other<- bind_rows(df_clust,df_clust_other) %>% ggplot(aes(x=x, y=y, color=clusters))+
+          geom_area(aes(x=x, y=y, fill=clusters),alpha=0.2)+
+          geom_line(size=0.75)+
+          scale_fill_brewer(palette="Dark2")+
+          scale_color_brewer(palette="Dark2")+
+          scale_y_continuous(expand=c(0.004,0))+
+          labs(x = "", y = "Selected cluster versus others")+
+          theme_minimal(base_size = 12) +
+          theme(axis.title.y=element_text(size=rel(1.4)),
+                axis.title.x=element_text(size=rel(1.4)),
+                panel.background = element_rect(fill = NA, color = "gray40"),
+                legend.position="bottom")
+        print(graph_density_cluster_vs_other)
+        }
+      
+    }
     
     normality_test <- shapiro.test(var_clusters$value)
-    
-    results <- list("Displaying density and normality test of " , variable, normality_test)
-    
+    results <- list("Displaying density and normality test of " = variable, normality_test)
     return(results)
-    } else {}
+    }
+    
+    else {}
   }
 }
+
 
 #Tableau de corr : Il represente la proportion de variance
 #expliquee par les groupes pour chaque variable. Plus il est eleve,
@@ -513,6 +666,17 @@ effect_size <- function(active_variables, clusters) {
 
 #test
 effect_size(fromage[,-1], groupes.cah)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
