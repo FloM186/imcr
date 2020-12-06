@@ -26,11 +26,11 @@ quali_caracterisation <- function(active_variables, clusters){
   
   #instance creation
   instance <- list()
-  instance$v.cramer <- v.cramer(active_variables, clusters)
-  instance$l.profil <- l.profil(active_variables, clusters)
-  instance$c.profil <- c.profil(active_variables, clusters)
-  instance$h <- h.value.test(active_variables, clusters)
-  instance$phi <- phi.value.test(active_variables, clusters)
+  instance$v.cramer <- v.cramer(active_variables, clusters, show_graph, digits)
+  instance$l.profil <- l.profil(active_variables, clusters, show_graph, digits)
+  instance$c.profil <- c.profil(active_variables, clusters, show_graph, digits)
+  instance$h <- h.value.test(active_variables, clusters, show_graph, digits)
+  instance$phi <- phi.value.test(active_variables, clusters, show_graph, digits)
   class(instance) <- "univariate_qualitative"
   return(instance)
 }
