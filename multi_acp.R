@@ -31,7 +31,7 @@ library(ggplot2)
 library("gridExtra")
 
 
-#nom qd on passe dessus
+
 #Rapport de corrélation classe dim
 #Rapport de corrélation var
 corr <- runif(9, 0, 1)
@@ -53,8 +53,8 @@ tab<-function(obj,nb_dim){
 }
 
 #Function to know the differents elements of ACP_tab's object
-print.ACP_tab <- function (x, file = NULL, sep = ";"){
-  if (!inherits(x, "ACP_tab")) stop("non convenient data")
+print.multi.quanti <- function (x, file = NULL, sep = ";"){
+  if (!inherits(x, "multi.quanti")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
   res <- array("", c(24, 2), list(1:24, c("name", "description")))
@@ -77,13 +77,18 @@ print.ACP_tab <- function (x, file = NULL, sep = ";"){
 }
 
 #Function to show the differents plots 
-plot.ACP_tab<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
-  #Circle of correlation with the indice of Cramer
+plot.multi.quanti<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
+  #Circle of correlation with the indice of correlation
   print(fviz_pca_var(res.pca, col.var = corr,
                      gradient.cols = c("blue", "yellow", "red"),
                      legend.title = "Coeff correlation",axes = axes) ) 
   #Graph of the variables
-  var<-rbind(res.pca$var$coord,res.pca$quali.sup$coord)
+  if (sup==FALSE){
+    var<-res.pca$var$coord
+  }else{
+    var<-rbind(res.pca$var$coord,res.pca$quali.sup$coord)
+  }
+  
   b<-ggplot(as.data.frame(var),aes(x=var[,axes[1]], y=var[,axes[2]])) + 
     geom_point() +
     scale_fill_brewer(palette="BuPu")+ 
@@ -129,12 +134,7 @@ plot.ACP_tab<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
           legend.position="top", 
           legend.justification=c(0,1))+
     labs(color = "Class and  quali. var")
-  print(ggplotly(a))
-  fig <- ggplotly(a)
-  
-  fig <- fig %>% style( hoverinfo = nom2)
-  
-  fig
+  print(a)
 
   #Graph of the contribution for the individuals by class 
   data<-as.data.frame(res.pca$ind$contrib)
@@ -180,12 +180,20 @@ plot.ACP_tab<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
 
 
 #Function to realize multivariate analysis for numerical variables
-ACP_tab<-function(active_variables, clusters,quali.supp=NULL,show_graph=NULL,axes=c(1,2)){
+multi.quanti<-function(active_variables, clusters,quali.supp=NULL,show_graph=NULL,axes=c(1,2)){
   if (length(active_variables) < 2){
-    stop("X doesn't contain enough variables")
+    stop("active_variables doesn't contain enough variables")
   }
   if (length(clusters)!=nrow(active_variables)){
-    stop("X and y doesn't have the same length")
+    stop("active_variables and y doesn't have the same length")
+  }
+  test<-active_variables[,-quali.supp]
+  if(all(sapply(test, is.numeric))==FALSE){
+    stop("Active variables (minus supplementary variables) aren't numeric")
+  }
+  test<-active_variables[,quali.supp]
+  if(all(sapply(test, is.character))==FALSE){
+    stop("supplementary aren't character")
   }
   
   # ACP 
@@ -226,7 +234,7 @@ ACP_tab<-function(active_variables, clusters,quali.supp=NULL,show_graph=NULL,axe
   if(is.null(quali.supp)==FALSE){
     instance$quali.supp<-res.pca$quali
   }
-  class(instance) <- c("ACP_tab","list ")
+  class(instance) <- c("multi.quanti","list ")
   
   #Show graphs
   if(show_graph==TRUE){

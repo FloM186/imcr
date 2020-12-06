@@ -17,7 +17,6 @@ classe<-as.factor(floor(runif(1000, min=1, max=4)))
 
 #Tableau v de cramer par classe et dimension
 #Cramer prendre la dernière version
-#Nom qd on passe dessus
 
 v.cramer <- function(classe, var){
   #Teste si les variables sont sous forme de data.frame
@@ -83,14 +82,41 @@ desc.dim<-function(res,nb_dim){
 
 # Analyse factorielle des Correspondances (ACM) --------------------------------
 #
-ACM_val<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
+multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
   if (length(active_variables) < 2){
-    stop("active_variables doesn't contain enough variables")
+    stop("Active_variables doesn't contain enough variables")
   }
-  res.mca <- MCA (active_variables,graph = FALSE,quanti.sup = quanti.supp)
+  if (length(clusters)!=nrow(active_variables)){
+    stop("active_variables and y doesn't have the same length")
+  }
+  test<-active_variables[,-quanti.supp]
+  if(all(sapply(test, is.character))==FALSE){
+    stop("Active variables (minus supplementary variables) aren't numeric")
+  }
+  test<-active_variables[,quanti.supp]
+  if(all(sapply(test, is.numeric))==FALSE){
+    stop("supplementary aren't character")
+  }
+  
+  res.mca <- MCA (active_variables,show_graph = FALSE,quanti.sup = quanti.supp)
   ##Valeurs propres
+  #Visualisation of eigen values
   eig.val <- get_eigenvalue(res.mca)
-  print(fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 100)))                          
+  data_eig<-data.frame("dimension"=rownames(as.data.frame(eig.val)),"eigenvalue"=eig.val[,1],"percentage"=eig.val[,2])
+  plot_eig<-ggplot(data=data_eig, aes(x=dimension,y=percentage)) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label=paste(round(percentage,2),"%",sep="")), vjust=-0.3, size=3.5)+
+    geom_text(aes(label=round(eigenvalue,2)), vjust=1.6, color="white", size=3.5)+
+    theme_minimal(base_size = 12)+
+    ggtitle("Percentage of variance and eigenvalue by dimension")+
+    labs(x = "Dimensions", y = "% of variance")+
+    scale_y_continuous(expand=c(0.004,0),limits = c(0, 100))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"))
+  print(eig.val)
+  print(plot_eig)
   
   nb_dim<-readline(prompt="How many axes do you want to keep ? " )
   nb_dim<-as.integer(nb_dim)
@@ -114,17 +140,27 @@ ACM_val<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),gra
   if(is.null(quanti.supp)==FALSE){
     instance$quanti.supp<-res.mca$quanti
   }
-  class(instance) <- c("ACM_val","list ")
+  class(instance) <- c("multi.quali","list ")
   
-  if(!graph==FALSE){
-    cramer<-as.numeric(v.cramer(y,X)[,2])
-    plot.ACM_val(res.mca,clusters,cramer,quanti.supp)
+  if(!show_graph==FALSE){
+    #cramer en enlevant var sup
+    #axes a ajouter
+    if(!is.null(quanti.supp)){
+      sup=TRUE
+      cramer<-as.numeric(v.cramer(clusters,actives_variables[,-quali.supp])[,2])
+      plot.ACM_val(res.mca,clusters,cramer,axes,sup)
+    }else{
+      sup=FALSE
+      cramer<-as.numeric(v.cramer(clusters,actives_variables)[,2])
+      plot.ACM_val(res.mca,clusters,cramer,axes,sup)
+    }
+    
   }
   #renvoyer le rÃ©sultat
   return(instance)
 }
 
-plot.ACM_val<-function(res.mca,clusters, cramer,quanti.supp,axes = c(1, 2)){
+plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   #Graphique des variables colorÃ©s selon le v de cramer
   print(fviz_mca_var (res.mca, choice="mca.cor",col.var = cramer,
                         gradient.cols = c("blue", "yellow", "red"),
@@ -133,7 +169,7 @@ plot.ACM_val<-function(res.mca,clusters, cramer,quanti.supp,axes = c(1, 2)){
   
   #Graph of the qualitatives variables and individuals by class 
   ind<-rbind(res.mca$ind$coord,res.mca$var$coord)
-  grp<-append(clusters, rep("var supp",nrow(res.mca$var$coord)))
+  grp<-append(clusters, rep("Modalités",nrow(res.mca$var$coord)))
   nom<-c(rep("",nrow(res.mca$ind$coord)),rownames(res.mca$var$coord))
   a<-ggplot(as.data.frame(ind),aes(x=ind[,axes[1]], y=ind[,axes[2]], color=grp)) + 
     geom_point() +
@@ -192,7 +228,7 @@ plot.ACM_val<-function(res.mca,clusters, cramer,quanti.supp,axes = c(1, 2)){
   print(scatterPlot)
   
   
-  if(is.null(quanti.supp)==FALSE){
+  if(sup==TRUE){
     #Quanti supp
     print(fviz_mca_var(x, choice = "quanti.sup",
                          ggtheme = theme_minimal(),axes=axes))
@@ -201,7 +237,7 @@ plot.ACM_val<-function(res.mca,clusters, cramer,quanti.supp,axes = c(1, 2)){
   
 }
 
-print.ACM_val <- function (res.mca, file = NULL, sep = ";", ...){
+print.multi.quali <- function (res.mca, file = NULL, sep = ";", ...){
   if (!inherits(res.mca, "ACM_val")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
@@ -226,8 +262,4 @@ res1<-ACM_val(data,classe,graph=F)
 
 print(res1)
 
-r<-res.mca <- MCA (data,graph = FALSE)
-#Graphique des classes par variables a coder
-ggplot(data) + 
-  geom_point(aes(x = res.mca$ind$coord[,1], y = res.mca$ind$coord[,2], 
-                 color = classe, size = data[,7]))
+
