@@ -317,7 +317,7 @@ phi.value.test <- function(active_variables, clusters, digits=4){
     
     #We print our results in a barplot with threshold values
     print(ggplot(data=results, aes(x=modality, y=phi, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge(), fill = brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Phi value by modalities according to class")+
+            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Phi value by modalities according to class")+
             geom_hline(aes(yintercept = 0.1,linetype = "small value"),colour = "yellow", size=1)+
             geom_hline(aes(yintercept = 0.3,linetype = "medium value"),colour = "orange", size=1)+
             geom_hline(aes(yintercept = 0.5,linetype = "large value"),colour = "darkred", size=1)+
