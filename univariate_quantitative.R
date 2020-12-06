@@ -17,19 +17,6 @@ corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means 
 effect_size(fromage[,-1], groupes.cah)
 
 
-
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-
-
 #Function to calculate test value
 test_value <- function(active_variables, clusters, show_graph=TRUE, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) { #Check if input variables are numeric
