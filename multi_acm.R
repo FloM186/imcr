@@ -3,7 +3,7 @@
 install.packages(c("FactoMineR", "factoextra"))
 library("FactoMineR")
 library("factoextra")
-library("corrplot")
+library(plotly)
 
 #
 # Importation des données et sélection des éléments -----------------------
@@ -14,6 +14,10 @@ for (i in 1:7){
   data[,i]<-as.factor(data[,i])
 }
 classe<-as.factor(floor(runif(1000, min=1, max=4)))
+
+#Tableau v de cramer par classe et dimension
+#Cramer prendre la derni�re version
+#Nom qd on passe dessus
 
 v.cramer <- function(classe, var){
   #Teste si les variables sont sous forme de data.frame
@@ -52,6 +56,7 @@ v.cramer <- function(classe, var){
   }
 }
 
+#Function to construct table with contribution, cos2 and coordinates
 tab<-function(obj,nb_dim){
   list.tab<-list()
   for(i in 1:nb_dim){
@@ -60,12 +65,14 @@ tab<-function(obj,nb_dim){
     cos2<-obj$cos2[,i]
     display<-as.data.frame(cbind(coord,contrib,cos2))
     display<-display[which(display[,2]>=median(display[,2])&display[,3]>=0.5),]
+    display<-display[order(display[,1],decreasing=FALSE), ]
     nom<-paste("Dim",i,sep=" ")
     list.tab[[nom]]<-display
   }
   return(list.tab)
 }
 
+#Function to the description of the dimension
 desc.dim<-function(res,nb_dim){
   list.desc<-list()
   for(i in 1:nb_dim){
@@ -76,11 +83,11 @@ desc.dim<-function(res,nb_dim){
 
 # Analyse factorielle des Correspondances (ACM) --------------------------------
 #
-ACM_val<-function(X,y,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
-  if (length(X) < 2){
-    stop("X doesn't contain enough variables")
+ACM_val<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
+  if (length(active_variables) < 2){
+    stop("active_variables doesn't contain enough variables")
   }
-  res.mca <- MCA (X,graph = FALSE,quanti.sup = quanti.supp)
+  res.mca <- MCA (active_variables,graph = FALSE,quanti.sup = quanti.supp)
   ##Valeurs propres
   eig.val <- get_eigenvalue(res.mca)
   print(fviz_screeplot (res.mca, addlabels = TRUE, ylim = c (0, 100)))                          
@@ -109,33 +116,82 @@ ACM_val<-function(X,y,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
   }
   class(instance) <- c("ACM_val","list ")
   
-  if(!is.null(graph)){
+  if(!graph==FALSE){
     cramer<-as.numeric(v.cramer(y,X)[,2])
-    plot.ACM_val(res.mca,y,cramer,quanti.supp)
+    plot.ACM_val(res.mca,clusters,cramer,quanti.supp)
   }
   #renvoyer le résultat
   return(instance)
 }
 
-plot.ACM_val<-function(x,y, cramer,quanti.supp,axes = c(1, 2)){
+plot.ACM_val<-function(res.mca,clusters, cramer,quanti.supp,axes = c(1, 2)){
   #Graphique des variables colorés selon le v de cramer
-  
-  print(fviz_mca_var (x, choice="mca.cor",col.var = cramer,
+  print(fviz_mca_var (res.mca, choice="mca.cor",col.var = cramer,
                         gradient.cols = c("blue", "yellow", "red"),
                         legend.title = "V de Cramer",
                         repel = TRUE,axes = axes))
   
-
-  print(corrplot(x$var$cos2, is.corr=FALSE))# graphique du Cos2 des points colonnes sur tous les axes
-  print(corrplot(x$var$contrib, is.corr=FALSE))# graphique de la contributions des points colonnes sur tous les axes
+  #Graph of the qualitatives variables and individuals by class 
+  ind<-rbind(res.mca$ind$coord,res.mca$var$coord)
+  grp<-append(clusters, rep("var supp",nrow(res.mca$var$coord)))
+  nom<-c(rep("",nrow(res.mca$ind$coord)),rownames(res.mca$var$coord))
+  a<-ggplot(as.data.frame(ind),aes(x=ind[,axes[1]], y=ind[,axes[2]], color=grp)) + 
+    geom_point() +
+    scale_fill_brewer(palette="BuPu")+ 
+    geom_text(label=nom)+
+    theme_minimal(base_size = 12)+
+    ggtitle("Coordinates of the individuals and qualitatives variables")+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class and  quali. var")
+  print(a)
   
-  #Individus colorié selon classes
-  print(fviz_mca_ind (x,
-                        label = "none", # masquer le texte des individus
-                        habillage = y, # colorer par groupes
-                        
-                        addEllipses = TRUE, ellipse.type = "confidence",
-                        ggtheme = theme_minimal (),axes = axes))
+  #Graph of the contribution for the individuals by class 
+  data<-as.data.frame(res.mca$ind$contrib)
+  scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
+    geom_point() +
+    scale_fill_brewer(palette="BuPu")+ 
+    theme_minimal(base_size = 12)+
+    ggtitle("Coordinates of the contribution for the individuals by class")+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class")
+  print(scatterPlot)
+  
+  #Graph of the cos2 for the individuals by class
+  data<-as.data.frame(res.mca$ind$cos2)
+  scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
+    geom_point() +
+    ggtitle("Coordinates of the the cos2 for the individuals by class")+
+    scale_fill_brewer(palette="BuPu")+
+    theme_minimal(base_size = 12)+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class")
+  print(scatterPlot)
+  
+  
   if(is.null(quanti.supp)==FALSE){
     #Quanti supp
     print(fviz_mca_var(x, choice = "quanti.sup",
@@ -145,8 +201,7 @@ plot.ACM_val<-function(x,y, cramer,quanti.supp,axes = c(1, 2)){
   
 }
 
-print.ACM_val <- function (x, file = NULL, sep = ";", ...){
-  res.mca <- x
+print.ACM_val <- function (res.mca, file = NULL, sep = ";", ...){
   if (!inherits(res.mca, "ACM_val")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
@@ -166,12 +221,12 @@ print.ACM_val <- function (x, file = NULL, sep = ";", ...){
   }
 }
 
-res1<-ACM_val(data,classe,graph=TRUE)
+res1<-ACM_val(data,classe,graph=F)
 
 
 print(res1)
 
-res.mca <- MCA (data,graph = FALSE)
+r<-res.mca <- MCA (data,graph = FALSE)
 #Graphique des classes par variables a coder
 ggplot(data) + 
   geom_point(aes(x = res.mca$ind$coord[,1], y = res.mca$ind$coord[,2], 

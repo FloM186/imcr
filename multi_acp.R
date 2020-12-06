@@ -17,11 +17,26 @@ d.active<-data[,1:10]
 #Choix d'utiliser deux packages : FactoMineR (pour l'analyse) et factoextra (pour la visualisation, des donnÃ©es, basÃ©e sur ggplot2)
 install.packages(c("FactoMineR", "factoextra"))
 library("FactoMineR")
+library(tidyverse)
+library(magrittr)
+library(clValid)
+library(clusterCrit)
+library(ClustOfVar)
+library(ggpubr)
+library(factoextra)
+library(ade4)
+library(ggpubr)
 library("factoextra")
 library(ggplot2)
+library("gridExtra")
 
+
+#nom qd on passe dessus
+#Rapport de corrélation classe dim
+#Rapport de corrélation var
 corr <- runif(9, 0, 1)
 
+#Function to construct table with contribution, cos2 and coordinates
 tab<-function(obj,nb_dim){
   list.tab<-list()
   for(i in 1:nb_dim){
@@ -30,87 +45,180 @@ tab<-function(obj,nb_dim){
     cos2<-obj$cos2[,i]
     display<-as.data.frame(cbind(coord,contrib,cos2))
     display<-display[which(display[,2]>=median(display[,2])&display[,3]>=0.5),]
+    display<-display[order(display[,1],decreasing=FALSE), ]
     nom<-paste("Dim",i,sep=" ")
     list.tab[[nom]]<-display
   }
   return(list.tab)
 }
 
-print.ACP_tab <- function (x, file = NULL, sep = ";", ...){
-  res.pca <- x
-  if (!inherits(res.pca, "ACP_tab")) stop("non convenient data")
+#Function to know the differents elements of ACP_tab's object
+print.ACP_tab <- function (x, file = NULL, sep = ";"){
+  if (!inherits(x, "ACP_tab")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
   res <- array("", c(24, 2), list(1:24, c("name", "description")))
+  
+  #Description of the different elements
   res[1, ] <- c("eig.values", "eigenvalues")
   res[2, ] <- c("$var.tab", "results for the variables")
   res[3, ] <- c("$ind.tab", "results for the individus")
   indice <- 4
-  if (!is.null(res.pca$quali.sup)){
+  if (!is.null(x$quali.sup)){
     res[indice, ] <- c("$quali.supp", "results for the supplementary categorical variables")
   }
   print(res[1:indice,])
+  
+  #Integration of the results in a file
   if (!is.null(file)) {
-    write.infile(res.pca,file = file, sep=sep)
+    write.infile(x,file = file, sep=sep)
     print(paste("All the results are in the file",file))
   }
 }
 
-plot.ACP_tab<-function(x,y, axes = c(1, 2)){
-  #Cercle corrélation cos2
-  print(fviz_pca_var(x, col.var = "cos2",
-                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-                     axes = axes
-  ))
-  
-  #Cercle corrélation cramer
-  print(fviz_pca_var(x, col.var = corr,
+#Function to show the differents plots 
+plot.ACP_tab<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
+  #Circle of correlation with the indice of Cramer
+  print(fviz_pca_var(res.pca, col.var = corr,
                      gradient.cols = c("blue", "yellow", "red"),
-                     legend.title = "Cont.Var",axes = axes) ) 
-  #Graph selon classe + cos2
-  print(fviz_pca_ind(x,
-                     repel=TRUE,pointsize = "cos2",
-                     pointshape = 21,# Montre les points seulement (mais pas le "text")
-                     col.ind = y, # colorer by groups
-                     legend.title = "Classes",
-                     axes = axes
-  ))
-  #geom.ind = "point",  
-  #Graph selon classe + contrib
-  print(fviz_pca_ind(x,
-                     repel=TRUE,pointsize = "contrib",
-                     pointshape = 21,# Montre les points seulement (mais pas le "text")
-                     col.ind = y, # colorer by groups
-                     legend.title = "Classes",
-                     axes = axes
-  ))
+                     legend.title = "Coeff correlation",axes = axes) ) 
+  #Graph of the variables
+  var<-rbind(res.pca$var$coord,res.pca$quali.sup$coord)
+  b<-ggplot(as.data.frame(var),aes(x=var[,axes[1]], y=var[,axes[2]])) + 
+    geom_point() +
+    scale_fill_brewer(palette="BuPu")+ 
+    theme(legend.position="top", legend.justification=c(0,1))+
+    geom_text(label=rownames(var))+
+    theme_minimal(base_size = 12)+
+    ggtitle("Coordinates of the variable")+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"))
+  print(b)
+  
+ 
+  #Graph of the qualitatives variables and individuals by class 
+  if (sup==FALSE){
+    ind<-res.pca$ind$coord
+    grp<-clusters
+    nom1<-rep("",nrow(res.pca$ind$coord))
+    nom2<-rownames(res.pca$ind$coord)
+  }else{
+    ind<-rbind(res.pca$ind$coord,res.pca$quali.sup$coord)
+    grp<-append(clusters, rep("var supp",nrow(res.pca$quali.sup$coord)))
+    nom1<-c(rep("",nrow(res.pca$ind$coord)),rownames(res.pca$quali.sup$coord))
+    nom2<-nom1<-c(rownames(res.pca$ind$coord),rownames(res.pca$quali.sup$coord))
+  }
+  a<-ggplot(as.data.frame(ind),aes(x=ind[,axes[1]], y=ind[,axes[2]], color=grp)) + 
+    geom_point() +
+    scale_fill_brewer(palette="BuPu")+ 
+    geom_text(label=nom)+
+    theme_minimal(base_size = 12)+
+    ggtitle("Coordinates of the individuals and qualitatives variables")+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class and  quali. var")
+  print(ggplotly(a))
+  fig <- ggplotly(a)
+  
+  fig <- fig %>% style( hoverinfo = nom2)
+  
+  fig
+
+  #Graph of the contribution for the individuals by class 
+  data<-as.data.frame(res.pca$ind$contrib)
+  scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
+    geom_point() +
+    scale_fill_brewer(palette="BuPu")+ 
+    theme_minimal(base_size = 12)+
+    ggtitle("Coordinates of the contribution for the individuals by class")+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class")
+  print(scatterPlot)
+  
+  #Graph of the cos2 for the individuals by class
+  data<-as.data.frame(res.pca$ind$cos2)
+  scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
+    geom_point() +
+    ggtitle("Coordinates of the the cos2 for the individuals by class")+
+    scale_fill_brewer(palette="BuPu")+
+    theme_minimal(base_size = 12)+
+    labs(x = "Dim 1", y = "Dim 2")+
+    scale_x_continuous(expand=c(0.05,0.05))+
+    scale_y_continuous(expand=c(0.05,0.05))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"),
+          legend.position="top", 
+          legend.justification=c(0,1))+
+    labs(color = "Class")
+  print(scatterPlot)
+  
+  
 }
 
-ACP_tab<-function(X,y,quali.supp=NULL,graph=NULL){
-  if (length(X) < 2){
+
+
+#Function to realize multivariate analysis for numerical variables
+ACP_tab<-function(active_variables, clusters,quali.supp=NULL,show_graph=NULL,axes=c(1,2)){
+  if (length(active_variables) < 2){
     stop("X doesn't contain enough variables")
   }
-  if (length(y)!=nrow(X)){
+  if (length(clusters)!=nrow(active_variables)){
     stop("X and y doesn't have the same length")
   }
   
-  # Analyse en Composantes Principales (ACP)
-  res.pca<-PCA(X,quali.sup = quali.supp, scale.unit = TRUE, graph = FALSE)
+  # ACP 
+  res.pca<-PCA(active_variables,quali.sup = quali.supp, scale.unit = TRUE, graph = FALSE)
   
-  #Visualisation des valeurs propres
+  #Visualisation of eigen values
   eig.val <- get_eigenvalue(res.pca)
-  print(fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 100)))
-  
+  data_eig<-data.frame("dimension"=rownames(as.data.frame(eig.val)),"eigenvalue"=eig.val[,1],"percentage"=eig.val[,2])
+  plot_eig<-ggplot(data=data_eig, aes(x=dimension,y=percentage)) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label=paste(round(percentage,2),"%",sep="")), vjust=-0.3, size=3.5)+
+    geom_text(aes(label=round(eigenvalue,2)), vjust=1.6, color="white", size=3.5)+
+    theme_minimal(base_size = 12)+
+    ggtitle("Percentage of variance and eigenvalue by dimension")+
+    labs(x = "Dimensions", y = "% of variance")+
+    scale_y_continuous(expand=c(0.004,0),limits = c(0, 100))+
+    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+          axis.title.y=element_text(size=rel(1.4)),
+          axis.title.x=element_text(size=rel(1.4)),
+          panel.background = element_rect(fill = NA, color = "gray40"))
+  print(eig.val)
+  print(plot_eig)
+  #Choice of the number of axes
   nb_dim<-readline(prompt="How many axes do you want to keep ? " )
   nb_dim<-as.integer(nb_dim)
   
-  #Tableau var
+  #Table for variables
   var<-tab(get_pca_var(res.pca),nb_dim)
   
-  #Tableau individu
+  #able for individus
   ind <- tab(get_pca_ind(res.pca),nb_dim)
 
-  #creation de l'instance
+  #List of the results
   instance <- list()
   instance$eig.values<-eig.val
   instance$var.tab <- var
@@ -120,15 +228,19 @@ ACP_tab<-function(X,y,quali.supp=NULL,graph=NULL){
   }
   class(instance) <- c("ACP_tab","list ")
   
-  if(!is.null(graph)){
-    plot.ACP_tab(res.pca,y)
+  #Show graphs
+  if(show_graph==TRUE){
+    if(!is.null(quali.supp)){
+      sup=TRUE
+    }
+    plot.ACP_tab(res.pca,clusters,axes,sup)
   }
-  #renvoyer le rÃ©sultat
+  #return the list of results
   return(instance)
   
 }
 
-res1<-ACP_tab(d.active,groupes.cah,10,graph=TRUE)
+res1<-ACP_tab(d.active,groupes.cah,10,show_graph=TRUE)
 print(res1)
 res1$var.tab$`Dim 2`
 
