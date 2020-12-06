@@ -7,12 +7,12 @@
 #install.packages('clValid')
 #install.packages("clusterCrit")
 #install.packages('ClustOfVar')
-library(tidyverse)
+
 library(magrittr)
 library(clValid)
 library(clusterCrit)
 library(ClustOfVar)
-library(ggpubr)
+
 library(factoextra)
 library(formattable)
 library(ade4)
@@ -183,7 +183,8 @@ c=NULL
 active_variables_clusters = NULL
 active_variables = NULL
 
-
+#tableau rapport ocrr : Il represente la proportion de variance expliquee par les groupes pour chaque variable.
+#Plus il est eleve, plus la variance de la variable pourra etre expliquee par les groupes
 
 correler(fromage[,-1], groupes.cah)$test_value
 #"constructeur" pour classe S3
@@ -363,6 +364,7 @@ corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditio
     
     print(cluster_mean %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
             mutate("clusters (cond. means)"= 1:k) %>% select("clusters (cond. means)", everything()) %>%
+            
             formattable(align = c("l",rep("r", c )),
                         list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
                              area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
