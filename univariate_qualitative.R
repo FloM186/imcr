@@ -2,6 +2,7 @@
 library(fmsb)
 library(questionr)
 library(ggplot2)
+library(RColorBrewer)
 data(hdv2003)
 X=hdv2003
 
@@ -30,7 +31,7 @@ quali_caracterisation <- function(active_variables, clusters){
   instance$c.profil <- c.profil(active_variables, clusters)
   instance$h <- h.value.test(active_variables, clusters)
   instance$phi <- phi.value.test(active_variables, clusters)
-  class(instance) <- "univariate qualitative"
+  class(instance) <- "univariate_qualitative"
   return(instance)
 }
 
@@ -70,8 +71,12 @@ v.cramer <- function(active_variables, clusters, digits=5){
     
     #Otherwise, we print a barplot
     }else{
-      print(ggplot(data=as.data.frame(tab_cramer), aes(x=cramer_active_variables, y=cramer_val)) +
-              geom_bar(stat="identity", position=position_dodge(), width=0.75, fill="deepskyblue") + ggtitle("Cramer's v by variables")+
+      tab_cramer = as.data.frame(tab_cramer)
+      tab_cramer[,2] = as.numeric(tab_cramer[,2])
+      print(ggplot(data=tab_cramer, aes(x=cramer_active_variables, y=cramer_val)) +
+              geom_bar(stat="identity", position=position_dodge(), width=0.75, fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Cramer's v by variables")+
+              scale_y_continuous(limits=c(0,1))+
+              geom_text(aes(label=cramer_val), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
               labs(x = "Variables", y = "Cramer's value")+
               theme_minimal(base_size = 12) +
               theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
@@ -226,9 +231,10 @@ h.value.test <- function(active_variables, clusters, digits=4){
     #We print our results in a barplot with threshold values
     print(ggplot(data=results, aes(x=modality, y=h, fill=clusters)) +
             geom_bar(stat="identity", position=position_dodge()) + ggtitle("h value by modalities according to class")+
-            geom_hline(aes(yintercept = 0.2,colour = "small value"),linetype = 1, size=1.5)+
-            geom_hline(aes(yintercept = 0.5,colour = "medium value"),linetype = 1, size=1.5)+
-            geom_hline(aes(yintercept = 0.8,colour = "large value"),linetype = 1, size=1.5)+
+            geom_hline(aes(yintercept = 0.2,linetype = "small value"),colour = "yellow", size=1)+
+            geom_hline(aes(yintercept = 0.5,linetype = "medium value"),colour = "orange", size=1)+
+            geom_hline(aes(yintercept = 0.8,linetype = "large value"),colour = "darkred", size=1)+
+            scale_linetype_manual(name = "Thresholds", values=c(2,2,2),guide = guide_legend(override.aes = list(color = c("darkred", "orange","yellow"))))+
             geom_text(aes(label=h), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
             labs(x = "Variables", y = "h")+
             theme_minimal(base_size = 12) +
@@ -237,6 +243,12 @@ h.value.test <- function(active_variables, clusters, digits=4){
                   axis.title.x=element_text(size=rel(1.4)),
                   panel.background = element_rect(fill = NA, color = "gray40"))+
             facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    
+    print(results%>%  as.data.frame() %>% formattable(align = c("c","c", "r"),
+           list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
+          area(col = 3) ~ formatter("span",style = x ~ style(font.weight = "bold",color = ifelse( x > 0.8,  "#00CC00",
+                                                                                          ifelse(x > 0.5, "#FF8000",
+                                                                                          ifelse(x>0.2,"#FF0000", "black"))))))))
     
     return(list("h value", results))
     
@@ -305,10 +317,11 @@ phi.value.test <- function(active_variables, clusters, digits=4){
     
     #We print our results in a barplot with threshold values
     print(ggplot(data=results, aes(x=modality, y=phi, fill=clusters)) +
-            geom_bar(stat="identity", position=position_dodge()) + ggtitle("Phi value by modalities according to class")+
-            geom_hline(aes(yintercept = 0.1,colour = "small value"),linetype = 1, size=1.5)+
-            geom_hline(aes(yintercept = 0.3,colour = "medium value"),linetype = 1, size=1.5)+
-            geom_hline(aes(yintercept = 0.5,colour = "large value"),linetype = 1, size=1.5)+
+            geom_bar(stat="identity", position=position_dodge(), fill = brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Phi value by modalities according to class")+
+            geom_hline(aes(yintercept = 0.1,linetype = "small value"),colour = "yellow", size=1)+
+            geom_hline(aes(yintercept = 0.3,linetype = "medium value"),colour = "orange", size=1)+
+            geom_hline(aes(yintercept = 0.5,linetype = "large value"),colour = "darkred", size=1)+
+            scale_linetype_manual(name = "Thresholds", values=c(2,2,2),guide = guide_legend(override.aes = list(color = c("darkred", "orange","yellow"))))+
             geom_text(aes(label=phi), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
             labs(x = "Variables", y = "phi")+
             theme_minimal(base_size = 12) +
@@ -317,8 +330,18 @@ phi.value.test <- function(active_variables, clusters, digits=4){
                   axis.title.x=element_text(size=rel(1.4)),
                   panel.background = element_rect(fill = NA, color = "gray40"))+
             facet_grid(clusters ~ ., labeller = labeller("clusters")) + facet_wrap(~ clusters, ncol=2))
+    
+    
+    print(results%>%  as.data.frame() %>% formattable(align = c("c","c", "r"),
+          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
+           area(col = 3) ~ formatter("span",style = x ~ style(font.weight = "bold",color = ifelse( x > 0.5,  "#00CC00",
+                                                                                           ifelse(x > 0.3, "#FF8000",
+                                                                                           ifelse(x>0.1,"#FF0000", "black"))))))))
+    
+    
     return(list("phi value", results))
-  
+    
+    
     #Tests if many variables are passed in parameter
   }else if(class(active_variables) == "data.frame"){
     ls = list()
