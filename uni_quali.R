@@ -38,7 +38,7 @@ uni.quali <- function(active_variables, clusters,show_graph=FALSE,digits=5){
 res<-uni.quali(X,classe,show_graph = TRUE)
 print(res)
 #Function to describe each results
-print.uni.quali<-function(x, file = NULL, sep = ";"){
+print.uni.quali<-function(x, file = NULL, sep = ";",...){
   if (!inherits(x, "uni.quali")) stop("non convenient data")
   cat("**Results Univariate Analysis for qualitative variable**\n")
   cat("*The results are available in the following objects:\n\n")
@@ -61,18 +61,18 @@ print.uni.quali<-function(x, file = NULL, sep = ";"){
 }
 
 #Function to do plot
-plot.uni.quali<-function(obj,type,name=NULL,digits=5){
+plot.uni.quali<-function(x,type=NULL,name=NULL,digits=5,...){
   if(type=="cramer"){
     #Radarchart only if the number of variables is greater than 2
-    if(nrow(obj) > 2){
-      data <- as.data.frame(matrix(as.numeric(obj[,2]), ncol=nrow(obj)))
+    if(nrow(x) > 2){
+      data <- as.data.frame(matrix(as.numeric(x[,2]), ncol=nrow(x)))
       print(radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 ))
       
       #Otherwise, we print a barplot
     }else{
-      obj = as.data.frame(obj)
-      obj[,2] = as.numeric(obj[,2])
-      print(ggplot(data=obj, aes(x=cramer_active_variables, y=cramer_val)) +
+      x = as.data.frame(x)
+      x[,2] = as.numeric(x[,2])
+      print(ggplot(data=x, aes(x=cramer_active_variables, y=cramer_val)) +
               geom_bar(stat="identity", position=position_dodge(), width=0.75, fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle("Cramer's v by variables")+
               scale_y_continuous(limits=c(0,1))+
               geom_text(aes(label=cramer_val), position=position_dodge(width=0.9), vjust=-0.25, size=3)+
@@ -87,7 +87,7 @@ plot.uni.quali<-function(obj,type,name=NULL,digits=5){
   if(type=="l.profil"){
     title=paste("Proportion by modalities according to class for",name,sep=" ")
     #Print a barplot for the contingency table
-    print(ggplot(data=as.data.frame(round(prop.table(obj,1)*100,digits)), aes(x=active_variables, y=Freq)) +
+    print(ggplot(data=as.data.frame(round(prop.table(x,1)*100,digits)), aes(x=active_variables, y=Freq)) +
             geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle(title) +
             labs(x = "Modalities", y = "Proportion (row profils)")+
             scale_y_continuous(expand=c(0.004,0)) +
@@ -101,7 +101,7 @@ plot.uni.quali<-function(obj,type,name=NULL,digits=5){
   if(type=="c.profil"){
     title=paste("Proportion by modalities according to class for",name,sep=" ")
     #Print a barplot for the contingency table
-    print(ggplot(data=as.data.frame(round(prop.table(obj,2)*100,digits)), aes(x=active_variables, y=Freq)) +
+    print(ggplot(data=as.data.frame(round(prop.table(x,2)*100,digits)), aes(x=active_variables, y=Freq)) +
             geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle(title) +
             labs(x = "Modalities", y = "Proportion (col. profil)")+
             scale_y_continuous(expand=c(0.004,0)) +
@@ -115,7 +115,7 @@ plot.uni.quali<-function(obj,type,name=NULL,digits=5){
   if(type=="h"){
     title=paste("h value by modalities according to class for",name,sep=" ")
     #We print our results in a barplot with threshold values
-    print(ggplot(data=obj, aes(x=modality, y=h)) +
+    print(ggplot(data=x, aes(x=modality, y=h)) +
             geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle(title)+
             geom_hline(aes(yintercept = 0.2,linetype = "small value"),colour = "yellow", size=1)+
             geom_hline(aes(yintercept = 0.5,linetype = "medium value"),colour = "orange", size=1)+
@@ -133,7 +133,7 @@ plot.uni.quali<-function(obj,type,name=NULL,digits=5){
   if(type=="phi"){
     title=paste("Phi value by modalities according to class for",name,sep=" ")
     #We print our results in a barplot with threshold values
-    print(ggplot(data=obj, aes(x=modality, y=phi)) +
+    print(ggplot(data=x, aes(x=modality, y=phi)) +
             geom_bar(stat="identity", position=position_dodge(),fill=brewer.pal(n = 3, name = "Dark2")[1]) + ggtitle(title)+
             geom_hline(aes(yintercept = 0.1,linetype = "small value"),colour = "yellow", size=1)+
             geom_hline(aes(yintercept = 0.3,linetype = "medium value"),colour = "orange", size=1)+
