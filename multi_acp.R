@@ -3,7 +3,7 @@ fromage.cr <- scale(fromage,center=T,scale=T)
 d.fromage <- dist(fromage.cr)
 cah.ward <- hclust(d.fromage,method="ward.D2")
 groupes.cah <- cutree(cah.ward,k=4)
-groupes.cah=as.factor(groupes.cah)
+#groupes.cah=as.factor(groupes.cah)
 
 data<-read.csv2("E:/M1 - INFO/S2/Clustering/Villes universitaires.csv",header=TRUE,row.names="Villes")
 d.active<-data[,1:9]
@@ -11,7 +11,7 @@ active.cr <- scale(d.active,center=T,scale=T)
 d.active <- dist(active.cr)
 cah.ward <- hclust(d.active,method="ward.D2")
 groupes.cah <- cutree(cah.ward,k=4)
-groupes.cah=as.factor(groupes.cah)
+#groupes.cah=as.factor(groupes.cah)
 d.active<-data[,1:10]
 
 #Choix d'utiliser deux packages : FactoMineR (pour l'analyse) et factoextra (pour la visualisation, des données, basée sur ggplot2)
@@ -30,6 +30,7 @@ library("factoextra")
 library(ggplot2)
 library("gridExtra")
 library(RColorBrewer)
+library(formattable)
 
 
 #Rapport de corr�lation classe dim
@@ -64,17 +65,20 @@ tab<-function(obj,nb_dim){
 
 
 #Function to know the differents elements of ACP_tab's object
-print.multi.quanti <- function (x, file = NULL, sep = ";"){
+print.multi.quanti <- function (x, file = NULL, sep = ";",...){
   if (!inherits(x, "multi.quanti")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
   res <- array("", c(24, 2), list(1:24, c("name", "description")))
   
   #Description of the different elements
-  res[1, ] <- c("eig.values", "eigenvalues")
+  res[1, ] <- c("$eig.values", "eigenvalues")
   res[2, ] <- c("$var.tab", "results for the variables")
   res[3, ] <- c("$ind.tab", "results for the individus")
-  indice <- 4
+  res[4, ]<- c("$correlation", "correlation between dimensions and clusters")
+  res[5, ]<- c("$correlation$`Conditionnal means table`", "table of conditionnaly means between clusters and dimension")
+  res[6, ]<- c("$correlation$`Correlation coefficients table`", "table of correlation between dimensions and clusters")
+  indice <- 7
   if (!is.null(x$quali.sup)){
     res[indice, ] <- c("$quali.supp", "results for the supplementary categorical variables")
   }
@@ -88,7 +92,8 @@ print.multi.quanti <- function (x, file = NULL, sep = ";"){
 }
 
 #Function to show the differents plots 
-plot.multi.quanti<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
+plot.multi.quanti<-function(x,clusters=NULL, axes = c(1, 2),sup=FALSE,corr=NULL,...){
+  res.pca<-x
   #Circle of correlation with the indice of correlation
   print(fviz_pca_var(res.pca, col.var = corr,
                      gradient.cols = brewer.pal(n=3, name="Dark2"),
@@ -183,6 +188,7 @@ plot.multi.quanti<-function(res.pca,clusters, axes = c(1, 2),sup=FALSE){
     labs(color = "Class")
   print(scatterPlot)
   
+ 
   
 }
 
@@ -219,14 +225,18 @@ multi.quanti<-function(active_variables, clusters,quali.supp=NULL,show_graph=NUL
   #Table for variables
   var<-tab(get_pca_var(res.pca),nb_dim)
   
-  #able for individus
+  #Table for individus
   ind <- tab(get_pca_ind(res.pca),nb_dim)
+  
+  #Table of correlation between coorninates and clusters
+  correlation<-corr_coef(as.data.frame(res.pca$ind$coord),clusters)
 
   #List of the results
   instance <- list()
   instance$eig.values<-eig.val
   instance$var.tab <- var
   instance$ind.tab<-ind
+  instance$correlation<-correlation
   if(is.null(quali.supp)==FALSE){
     instance$quali.supp<-res.pca$quali
   }
@@ -236,12 +246,120 @@ multi.quanti<-function(active_variables, clusters,quali.supp=NULL,show_graph=NUL
   if(show_graph==TRUE){
     if(!is.null(quali.supp)){
       sup=TRUE
+      corr<-corr_coef(active_variables[,-quali.supp],clusters)$`Correlation coefficients table`
+      c<-rep(0,length(corr))
+      for(i in 1:length(corr)){c[i]<-corr[1,i]}
+      }else{
+      corr<-corr_coef(active_variables,clusters)$`Correlation coefficients table`
+      c<-rep(0,length(corr))
+      for(i in 1:length(corr)){c[i]<-corr[1,i]}
     }
-    plot.multi.quanti(res.pca,clusters,axes,sup)
+    
+    plot.multi.quanti(res.pca,as.factor(clusters),axes,sup,c)
   }
   #return the list of results
   return(instance)
   
+}
+
+corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditionnal_means=TRUE, digits=3) {
+  
+  if(all(sapply(active_variables, is.numeric))==FALSE) { #Check if input variables are numeric
+    print("Active variables must be numeric")
+  } else if (is.vector(clusters)==FALSE ) { #Check if input clusters are a vector
+    print("Clusters must be a vector")
+  } else {
+    
+    #Concatenate variables and clusters
+    active_variables_clusters <- active_variables %>% mutate(clusters = factor(clusters))
+    
+    #Calculate mean for each cluster
+    cluster_mean <-active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x),
+                   .funs = list(mean)) %>%
+      select_if(function(x) is.numeric(x))
+    
+    #Calculate length for each cluster
+    cluster_n <-active_variables_clusters %>%
+      group_by(clusters) %>%
+      summarise_if(.predicate = function(x) is.numeric(x),
+                   .funs = list(length))  %>%
+      select_if(function(x) is.numeric(x))
+    
+    #Calculate mean across all clusters
+    active_variables_mean <- active_variables %>% summarise_if(.predicate = function(x) is.numeric(x), .funs = list(mean))
+    
+    #Input for k and c
+    k=length(unique(clusters))
+    c = ncol(active_variables)
+    
+    #Creating empty data frame of wanted dimension
+    sct <-as.data.frame(matrix(nrow = nrow(active_variables), ncol=c))
+    colnames(sct) = colnames(active_variables)
+    
+    #Loop to fill data frame
+    for(i in 1:c) {
+      sct[,i] <- active_variables %>% select(,i) %>% mutate_all(~ (.x - as.numeric(active_variables_mean[i]))^2)
+    }
+    
+    #Calculate SCT
+    sct <-sct %>% summarise_all(sum)
+    
+    #Creating empty data frame of wanted dimension
+    sce <- as.data.frame(matrix(ncol=c, nrow=k))
+    colnames(sce) = colnames(active_variables)
+    
+    #Loop to fill data frame
+    for(j in 1:k){
+      for(i in 1:ncol(active_variables)) {
+        sce[j,i]<-  as.numeric(cluster_n[j,i]*(cluster_mean[j,i] - active_variables_mean[i])^2)
+      }
+    }
+    #Calculate SCE
+    sce <-sce %>% summarise_all(sum)
+    
+    #Calculate correlation coefficient
+    rcor <- sce/sct
+    
+    #Printing the plot
+    if(show_graph==TRUE) {
+      print(rcor %>% gather(key, value) %>%
+              ggplot(aes(x=key, y=value))+
+              geom_bar(stat="identity", width=0.75, fill= brewer.pal(n = 3, name = "Dark2")[1])+
+              labs(x = "Variables", y = "Correlation coefficient")+
+              scale_y_continuous(expand=c(0.004,0))+
+              theme_minimal(base_size = 12) +
+              theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
+                    axis.title.y=element_text(size=rel(1.4)),
+                    axis.title.x=element_text(size=rel(1.4)),
+                    panel.background = element_rect(fill = NA, color = "gray40")))} else {}
+    
+    #Returning the conditionnal means table and correlation coefficient table
+    if(show_conditionnal_means==TRUE){results <- list("Conditionnal means table"= cluster_mean %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                                                      "Correlation coefficients table" = rcor %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
+    
+    #Printing the formatted conditionnal means table in Viewer tab (html format)
+    print(cluster_mean %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+            mutate("clusters (cond. means)"= 1:k) %>% select("clusters (cond. means)", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
+    } else {
+      #Returning the correlation coefficient table
+      results <- list("Conditionnal means table" = rcor)}
+    
+    #Printing the correlation coefficient table in Viewer tab (html format)
+    print(rcor %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)) %>%
+            mutate("correlation coefficient"= "value") %>% select("correlation coefficient", everything()) %>%
+            formattable(align = c("l",rep("r", c )),
+                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
+    #Return for the function output
+    return(results)
+  }
 }
 
 res1<-multi.quanti(d.active,groupes.cah,10,show_graph=TRUE)
