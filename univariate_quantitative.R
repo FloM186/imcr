@@ -1,6 +1,7 @@
-library(RColorBrewer)
 library(tidyverse)
+library(RColorBrewer)
 library(ggpubr)
+library(formattable)
 
 #############   data test fromage#######
 fromage <- read.delim("C:/Users/moret/Downloads/_documents/GitHub/projetR/dataset test/fromage.txt")
@@ -14,9 +15,13 @@ groupes.cah <- cutree(cah.ward,k=4)
 #test
 test_value(fromage[,-1], groupes.cah, show_graph = TRUE)
 corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)
-effect_size(fromage[,-1], groupes.cah)
 
+str(effect_size(fromage[,-1], groupes.cah))
 
+corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)[2]
+
+str(effect_size(fromage[,-1], groupes.cah))
+str(corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE))
 #Function to calculate test value
 test_value <- function(active_variables, clusters, show_graph=TRUE, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) { #Check if input variables are numeric
@@ -116,7 +121,7 @@ test_value <- function(active_variables, clusters, show_graph=TRUE, digits=3) {
                           list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
                                area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
       
-      #Return for the function outup
+      #Returning for the function outup
       results <- list("Eigenvalues table:" = test_value %>% mutate(clusters= 1:k) %>% select(clusters, everything()) %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
       return(results)
       
@@ -202,7 +207,7 @@ corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditio
                     axis.title.x=element_text(size=rel(1.4)),
                     panel.background = element_rect(fill = NA, color = "gray40")))} else {}
     
-    #Printing the conditionnal means table and correlation coefficient table
+    #Returning the conditionnal means table and correlation coefficient table
     if(show_conditionnal_means==TRUE){results <- list("Conditionnal means table"= cluster_mean %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
                                                       "Correlation coefficients table" = rcor %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
     
@@ -214,7 +219,7 @@ corr_coef <- function(active_variables, clusters, show_graph=TRUE, show_conditio
                              area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
     
     } else {
-      #Printing the correlation coefficient table
+      #Returning the correlation coefficient table
       results <- list("Conditionnal means table" = rcor)}
     
     #Printing the correlation coefficient table in Viewer tab (html format)
@@ -377,52 +382,15 @@ effect_size <- function(active_variables, clusters, digits=3) {
     #Calculating U1
     u1 <- ((2*u2) -1)/u2
     
-    #Printing tables
-    print(list("Cohen's d" = es_d %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "Hedge's g" = es_g %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "U3 value table" = u3 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "U2 value table"=  u2 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "U1 value table" = u1 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "Binomial effect size display" = besd %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
-               "Common language effect size"= cles %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))))
-    
-    #Printing formatted tables in Viewer tab (html format)
-    print(es_d %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (Cohen's d)"= 1:k) %>% select("clusters (Cohen's d)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    
+    #Printing tables in order to help decide which variable or cluster to inspect in next prompt
+    print(list("Hedge's g" = es_g %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))))
+    #Printing formatted table in Viewer tab (html format)
     print(es_g %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
             mutate("clusters (Hedge's g)"= 1:k) %>% select("clusters (Hedge's g)", everything()) %>%
             formattable(align = c("l",rep("r", c )),
                         list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
                              area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    print(u3 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (U3)"= 1:k) %>% select("clusters (U3)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    print(u2%>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (U2)"= 1:k) %>% select("clusters (U2)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    print(u1 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (U1)"= 1:k) %>% select("clusters (U1)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    print(besd %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (BESD)"= 1:k) %>% select("clusters (BESD)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
-    print(cles %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
-            mutate("clusters (CLES)"= 1:k) %>% select("clusters (CLES)", everything()) %>%
-            formattable(align = c("l",rep("r", c )),
-                        list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
-                             area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+    
     
     #Prompt to ask which variable to inspect
     variable <- readline("What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: ")
@@ -535,11 +503,52 @@ effect_size <- function(active_variables, clusters, digits=3) {
                           
                         }
       
+      #Printing formatted table in Viewer tab (html format)
+      print(es_d %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (Cohen's d)"= 1:k) %>% select("clusters (Cohen's d)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      print(u3 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (U3)"= 1:k) %>% select("clusters (U3)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      print(u2 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (U2)"= 1:k) %>% select("clusters (U2)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      print(u1 %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (U1)"= 1:k) %>% select("clusters (U1)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      print(besd %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (BESD)"= 1:k) %>% select("clusters (BESD)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      print(cles %>%  as.data.frame() %>% mutate_if(is.numeric, ~round(., digits))%>%
+              mutate("clusters (CLES)"= 1:k) %>% select("clusters (CLES)", everything()) %>%
+              formattable(align = c("l",rep("r", c )),
+                          list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+                               area(col = 1:c+1) ~ color_tile("#DeF7E9", "#71CA97"))))
+      
       #Calculating shapiro-wilk test for normality
       normality_test <- shapiro.test(var_clusters$value)
       
       #Return for the function output
-      results <- list("Displaying density and normality test of " = variable, normality_test)
+      
+      #Returning tables
+      results <- list("Cohen's d" = es_d %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Hedge's g" = es_g %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U3 value table" = u3 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U2 value table"=  u2 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U1 value table" = u1 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Binomial effect size display" = besd %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Common language effect size"= cles %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Displaying density and normality test of " = variable, normality_test)
       return(results)
     }
     
@@ -561,7 +570,8 @@ quanti_caracterisation <- function(active_variables, clusters){
   class(instance) <- "univariate quantitative"
   return(instance)
 }
-quanti_caracterisation(fromage[,-1], groupes.cah)
+
+quanti_caracterisation(fromage[,-1], groupes.cah)$effec_"Common language effect size"
 
 
 
