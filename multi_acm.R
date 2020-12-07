@@ -10,50 +10,19 @@ library(plotly)
 #
 data<-read.csv("D:/M2-SISE/Python/data/careval.csv",header=FALSE)
 data<-data[1:1000,]
-for (i in 1:7){
-  data[,i]<-as.factor(data[,i])
-}
+#for (i in 1:7){
+  #data[,i]<-as.factor(data[,i])
+#}
 classe<-as.factor(floor(runif(1000, min=1, max=4)))
 
 #Tableau v de cramer par classe et dimension
 #Cramer prendre la derni�re version
+#Test
+#idem acp
 
-v.cramer <- function(classe, var){
-  #Teste si les variables sont sous forme de data.frame
-  if(class(var) == "data.frame"){
-    names_col = names(var)
-    cramer_var = c()
-    cramer_val = c()
-    #On calcul le v de cramer pour toutes les variables qualitatives
-    for(i in 1:ncol(var)){
-      if(is.factor(var[,i])){
-        contingence = table(classe,var[,i])
-        khi = chisq.test(contingence)$statistic
-        dim = min(nrow(contingence),ncol(contingence)) - 1
-        v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),5)
-        cramer_var = append(cramer_var,names_col[i])
-        cramer_val = append(cramer_val,as.numeric(v_cramer))
-        tab_cramer = cbind(cramer_var,cramer_val)
-      }
-    }
-    
-    data <- as.data.frame(matrix(as.numeric(tab_cramer[,2]), ncol=nrow(tab_cramer)))
-    colnames(data) = tab_cramer[,1]
-    data = rbind(rep(1,length(tab_cramer)),rep(0,length(tab_cramer)),data)
-    
-    #radarchart(data, axistype=2, title = "Cramer's v by variable", pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 ,cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,20,5), cglwd=0.8,vlcex=0.8 )
-    
-    return(tab_cramer)
-    
-    # On calcul le v de cramer si seulement une variable qualitative a été passée en paramètre
-  }else if(is.factor(var)){
-    contingence = table(classe,var)
-    khi = chisq.test(contingence, correct=F)$statistic
-    dim = min(nrow(contingence),ncol(contingence)) - 1
-    v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),5)
-    return(v_cramer)
-  }
-}
+
+
+library(formattable)    #le package
 
 #Function to construct table with contribution, cos2 and coordinates
 tab<-function(obj,nb_dim){
@@ -63,9 +32,19 @@ tab<-function(obj,nb_dim){
     contrib<-obj$contrib[,i]
     cos2<-obj$cos2[,i]
     display<-as.data.frame(cbind(coord,contrib,cos2))
-    display<-display[which(display[,2]>=median(display[,2])&display[,3]>=0.5),]
-    display<-display[order(display[,1],decreasing=FALSE), ]
-    nom<-paste("Dim",i,sep=" ")
+    colnames(display)<-c(paste("Coord Dim",as.character(i),sep=""),paste("Contrib Dim",as.character(i),sep=""),paste("Cos2 Dim",as.character(i),sep=""))
+    print(display%>% formattable(align = c("c","c", "r"),
+                              list(`Indicator Name` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
+                                   area(col = 3) ~ formatter("span",
+                                                             style = x ~ style(
+                                                               font.weight = "bold",
+                                                               color = ifelse( x > 0.5,  "#00CC00", "black"))),
+                                   area(col = 2) ~ formatter("span",
+                                                             style = x ~ style(
+                                                               font.weight = "bold",
+                                                               color = ifelse( x > median(display[,2]),  "#00CC00", "black"))))))
+    
+    nom<-paste("Dim",i,sep="")
     list.tab[[nom]]<-display
   }
   return(list.tab)
@@ -82,41 +61,35 @@ desc.dim<-function(res,nb_dim){
 
 # Analyse factorielle des Correspondances (ACM) --------------------------------
 #
-multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),graph=NULL){
+multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),show_graph=NULL){
   if (length(active_variables) < 2){
     stop("Active_variables doesn't contain enough variables")
   }
   if (length(clusters)!=nrow(active_variables)){
     stop("active_variables and y doesn't have the same length")
   }
-  test<-active_variables[,-quanti.supp]
+  if(!is.null(quanti.supp)){
+    test<-active_variables[,-quanti.supp]
+  }else{
+    test<-active_variables
+  }
   if(all(sapply(test, is.character))==FALSE){
     stop("Active variables (minus supplementary variables) aren't numeric")
   }
-  test<-active_variables[,quanti.supp]
-  if(all(sapply(test, is.numeric))==FALSE){
-    stop("supplementary aren't character")
+  if(!is.null(quanti.supp)){
+    test<-active_variables[,quanti.supp]
+    if(all(sapply(test, is.numeric))==FALSE){
+      stop("supplementary aren't character")
+    }
   }
   
-  res.mca <- MCA (active_variables,show_graph = FALSE,quanti.sup = quanti.supp)
+  
+  res.mca <- MCA (active_variables,graph = FALSE,quanti.sup = quanti.supp)
   ##Valeurs propres
   #Visualisation of eigen values
   eig.val <- get_eigenvalue(res.mca)
-  data_eig<-data.frame("dimension"=rownames(as.data.frame(eig.val)),"eigenvalue"=eig.val[,1],"percentage"=eig.val[,2])
-  plot_eig<-ggplot(data=data_eig, aes(x=dimension,y=percentage)) +
-    geom_bar(stat="identity", fill="steelblue")+
-    geom_text(aes(label=paste(round(percentage,2),"%",sep="")), vjust=-0.3, size=3.5)+
-    geom_text(aes(label=round(eigenvalue,2)), vjust=1.6, color="white", size=3.5)+
-    theme_minimal(base_size = 12)+
-    ggtitle("Percentage of variance and eigenvalue by dimension")+
-    labs(x = "Dimensions", y = "% of variance")+
-    scale_y_continuous(expand=c(0.004,0),limits = c(0, 100))+
-    theme(axis.text.x = element_text(angle = -45, hjust=0, vjust=00),
-          axis.title.y=element_text(size=rel(1.4)),
-          axis.title.x=element_text(size=rel(1.4)),
-          panel.background = element_rect(fill = NA, color = "gray40"))
+  print(fviz_eig(res.mca, addlabels = TRUE, ylim = c(0, 50)))
   print(eig.val)
-  print(plot_eig)
   
   nb_dim<-readline(prompt="How many axes do you want to keep ? " )
   nb_dim<-as.integer(nb_dim)
@@ -143,16 +116,14 @@ multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2)
   class(instance) <- c("multi.quali","list ")
   
   if(!show_graph==FALSE){
-    #cramer en enlevant var sup
-    #axes a ajouter
     if(!is.null(quanti.supp)){
       sup=TRUE
-      cramer<-as.numeric(v.cramer(clusters,actives_variables[,-quali.supp])[,2])
-      plot.ACM_val(res.mca,clusters,cramer,axes,sup)
+      cramer<-corr <- runif(7, 0, 1)
+      plot.multi.quali(res.mca,clusters,cramer,sup,axes)
     }else{
       sup=FALSE
-      cramer<-as.numeric(v.cramer(clusters,actives_variables)[,2])
-      plot.ACM_val(res.mca,clusters,cramer,axes,sup)
+      cramer<-corr <- runif(7, 0, 1)
+      plot.multi.quali(res.mca,clusters,cramer,sup,axes)
     }
     
   }
@@ -163,7 +134,7 @@ multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2)
 plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   #Graphique des variables colorés selon le v de cramer
   print(fviz_mca_var (res.mca, choice="mca.cor",col.var = cramer,
-                        gradient.cols = c("blue", "yellow", "red"),
+                      gradient.cols = brewer.pal(n=3, name="Dark2"),
                         legend.title = "V de Cramer",
                         repel = TRUE,axes = axes))
   
@@ -173,7 +144,7 @@ plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   nom<-c(rep("",nrow(res.mca$ind$coord)),rownames(res.mca$var$coord))
   a<-ggplot(as.data.frame(ind),aes(x=ind[,axes[1]], y=ind[,axes[2]], color=grp)) + 
     geom_point() +
-    scale_fill_brewer(palette="BuPu")+ 
+    scale_fill_brewer(palette="Dark2")+ 
     geom_text(label=nom)+
     theme_minimal(base_size = 12)+
     ggtitle("Coordinates of the individuals and qualitatives variables")+
@@ -193,7 +164,7 @@ plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   data<-as.data.frame(res.mca$ind$contrib)
   scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
     geom_point() +
-    scale_fill_brewer(palette="BuPu")+ 
+    scale_fill_brewer(palette="Dark2")+ 
     theme_minimal(base_size = 12)+
     ggtitle("Coordinates of the contribution for the individuals by class")+
     labs(x = "Dim 1", y = "Dim 2")+
@@ -213,7 +184,7 @@ plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   scatterPlot <- ggplot(data,aes(x=data[,axes[1]], y=data[,axes[2]], color=clusters)) + 
     geom_point() +
     ggtitle("Coordinates of the the cos2 for the individuals by class")+
-    scale_fill_brewer(palette="BuPu")+
+    scale_fill_brewer(palette="Dark2")+
     theme_minimal(base_size = 12)+
     labs(x = "Dim 1", y = "Dim 2")+
     scale_x_continuous(expand=c(0.05,0.05))+
@@ -257,7 +228,7 @@ print.multi.quali <- function (res.mca, file = NULL, sep = ";", ...){
   }
 }
 
-res1<-ACM_val(data,classe,graph=F)
+res1<-multi.quali(data,classe,show_graph=T)
 
 
 print(res1)
