@@ -16,4 +16,9 @@ RoxygenNote: 7.1.1
 Imports: 
     stats,
     ggplot2,
-    fmsb
+    fmsb,
+    RColorBrewer,
+    formattable,
+    dplyr,
+    grDevices,
+    FactoMineR

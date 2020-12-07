@@ -7,11 +7,11 @@
 v.cramer(active_variables, clusters, show_graph = TRUE, digits = 5)
 }
 \arguments{
-\item{active_variables}{a factor vector or matrix}
+\item{active_variables}{a factor vector or matrix. Must contains qualitatives variables}
 
-\item{clusters}{a numeric vector}
+\item{clusters}{a numeric vector. Must contains clusters from a clustering}
 
-\item{show_graph}{logical. If FALSE, doesn't return graph}
+\item{show_graph}{logical. If FALSE, doesn't return any graph}
 
 \item{digits}{a number. Number of digits for cramer's v}
 }

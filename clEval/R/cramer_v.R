@@ -1,9 +1,9 @@
 #' @title  Compute Cramer's v of qualitatives variables and clusters
 #' @description  This function returns the cramer's v from qualitatives variables and clusters
 #'
-#' @param active_variables a factor vector or matrix
-#' @param clusters a numeric vector
-#' @param show_graph logical. If FALSE, doesn't return graph
+#' @param active_variables a factor vector or matrix. Must contains qualitatives variables
+#' @param clusters a numeric vector. Must contains clusters from a clustering
+#' @param show_graph logical. If FALSE, doesn't return any graph
 #' @param digits a number. Number of digits for cramer's v
 #'
 #' @return The Cramer's v
