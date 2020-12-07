@@ -1,26 +1,3 @@
-#install.packages(fmsb)
-library(fmsb)
-library(questionr)
-library(ggplot2)
-library(RColorBrewer)
-data(hdv2003)
-X=hdv2003
-
-X = read.delim("http://eric.univ-lyon2.fr/~ricco/tanagra/fichiers/autos_caracterisation.txt", header=T,sep = "\t")
-X = X[,-1]
-X2 = X[,-c(8:11)]
-X2 = scale(X2,center=T,scale=T)
-d = dist(X2)
-cah = hclust(d, method="ward.D2")
-plot(cah)
-#dendrogramme avec matérialisation des groupes
-rect.hclust(cah,k=4)
-#découpage en 4 groupes
-classe <- cutree(cah,k=4)
-classe = unname(classe)
-
-#classe=sample(c(1,2,3),2000,replace=T)
-
 #constructor for S3 class
 quali_caracterisation <- function(active_variables, clusters){
   
