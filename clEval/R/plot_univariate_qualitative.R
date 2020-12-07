@@ -1,11 +1,11 @@
-#' @title Graphics for all the functions of variable univariate qualitative
+#' @title Graphics for all the functions of qualitative variable
 #' @description This function allows to print any graphics for the variable univariate qualitative. We override the plot function.
 #'
 #' @param x a data frame. Contains all the data which needs to be print
 #' @param type a string. Choose the graphics to be print
 #' @param name a string. Name of the variable to be print
 #' @param digits a number. Number of digits for the values
-#' @param ... parameters passed to other methods
+#' @param ... further arguments of print method
 #'
 #' @return graphics for the univariate qualitative function
 #' @export
