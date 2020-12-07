@@ -13,13 +13,57 @@ data<-data[1:1000,]
 #for (i in 1:7){
   #data[,i]<-as.factor(data[,i])
 #}
-classe<-as.factor(floor(runif(1000, min=1, max=4)))
+classe<-as.vector(floor(runif(1000, min=1, max=4)))
 
 #Tableau v de cramer par classe et dimension
-#Cramer prendre la dernière version
+#Commentaire
 #Test
 #idem acp
 
+v.cramer <- function(active_variables, clusters, show_graph=TRUE, digits=5){
+  #Tests if the variables passed in parameter are in the form of data.frame
+  if(class(active_variables) == "data.frame"){
+    names_col = names(active_variables)
+    cramer_active_variables = c()
+    cramer_val = c()
+    
+    #We calculate the cramer's v for all the qualitative variables
+    for(i in 1:ncol(active_variables)){
+      if(is.factor(active_variables[,i]) || is.character(active_variables[,i])){
+        contingence = table(clusters,active_variables[,i])
+        khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
+        dim = min(nrow(contingence),ncol(contingence)) - 1
+        v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
+        
+        #Two vectors, one for variables names, the other for values
+        cramer_active_variables = append(cramer_active_variables,names_col[i])
+        cramer_val = append(cramer_val,as.numeric(v_cramer))
+      }
+    }
+    
+    #Creation of a data frame from the two vectors for ggplot
+    tab_cramer = cbind(cramer_active_variables,cramer_val)
+    data <- as.data.frame(matrix(as.numeric(tab_cramer[,2]), ncol=nrow(tab_cramer)))
+    colnames(data) = tab_cramer[,1]
+    data = rbind(rep(1,length(tab_cramer)),rep(0,length(tab_cramer)),data)
+    
+    if(show_graph==TRUE){
+      plot.uni.quali(tab_cramer,"cramer",digits = digits)
+      
+    }
+    vec.cramer=setNames(cramer_val,cramer_active_variables)
+    return(vec.cramer)
+    
+    
+    #We calculate the cramer's v if only one qualitative variable has been passed as a parameter
+  }else if(is.factor(active_variables) || is.character(active_variables)){
+    contingence = table(clusters,active_variables)
+    khi = chisq.test(contingence, simulate.p.value = TRUE)$statistic
+    dim = min(nrow(contingence),ncol(contingence)) - 1
+    v_cramer = round(as.numeric(sqrt(khi/(sum(contingence)*dim))),digits)
+    return(v_cramer)
+  }
+}
 
 
 library(formattable)    #le package
@@ -62,6 +106,7 @@ desc.dim<-function(res,nb_dim){
 # Analyse factorielle des Correspondances (ACM) --------------------------------
 #
 multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),show_graph=NULL){
+  #Test of the parameters
   if (length(active_variables) < 2){
     stop("Active_variables doesn't contain enough variables")
   }
@@ -83,33 +128,38 @@ multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2)
     }
   }
   
-  
+  #MCA
   res.mca <- MCA (active_variables,graph = FALSE,quanti.sup = quanti.supp)
-  ##Valeurs propres
+
   #Visualisation of eigen values
   eig.val <- get_eigenvalue(res.mca)
   print(fviz_eig(res.mca, addlabels = TRUE, ylim = c(0, 50)))
   print(eig.val)
   
+  #Choice number of dimensions
   nb_dim<-readline(prompt="How many axes do you want to keep ? " )
   nb_dim<-as.integer(nb_dim)
   
-  #Tableau var
+  #Table for variables
   var<-tab(get_mca_var(res.mca),nb_dim)
   
-  #Tableau individu
+  #Table for individuals
   ind<-tab(get_mca_ind(res.mca),nb_dim)
   
-  # Description de la dimension
+  # Description of dimension
   res.desc <- dimdesc(res.mca, axes = 1:nb_dim)
   desc <- desc.dim(res.desc,nb_dim)
   
-  #creation de l'instance
+  #Correlation between dimension and clusters
+  correlation<-corr_coef(as.data.frame(res.mca$ind$coord),clusters)
+  
+  #List of results
   instance <- list()
   instance$eig.values<-eig.val
   instance$var.tab <- var
   instance$ind.tab<-ind
   instance$desc.dim<-desc
+  instance$correlation<-correlation
   if(is.null(quanti.supp)==FALSE){
     instance$quanti.supp<-res.mca$quanti
   }
@@ -118,12 +168,12 @@ multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2)
   if(!show_graph==FALSE){
     if(!is.null(quanti.supp)){
       sup=TRUE
-      cramer<-corr <- runif(7, 0, 1)
-      plot.multi.quali(res.mca,clusters,cramer,sup,axes)
+      cramer<-v.cramer(active_variables[,-quanti.supp],clusters,show_graph = FALSE)
+      plot.multi.quali(res.mca,as.factor(clusters),cramer,sup,axes)
     }else{
       sup=FALSE
-      cramer<-corr <- runif(7, 0, 1)
-      plot.multi.quali(res.mca,clusters,cramer,sup,axes)
+      cramer<-v.cramer(active_variables,clusters,show_graph = FALSE)
+      plot.multi.quali(res.mca,as.factor(clusters),cramer,sup,axes)
     }
     
   }
@@ -131,7 +181,8 @@ multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2)
   return(instance)
 }
 
-plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
+plot.multi.quali<-function(x,clusters=FALSE, cramer=FALSE,sup=FALSE,axes=c(1,2)){
+  res.mca<-x
   #Graphique des variables colorÃ©s selon le v de cramer
   print(fviz_mca_var (res.mca, choice="mca.cor",col.var = cramer,
                       gradient.cols = brewer.pal(n=3, name="Dark2"),
@@ -208,20 +259,29 @@ plot.multi.quali<-function(res.mca,clusters, cramer,sup,axes){
   
 }
 
-print.multi.quali <- function (res.mca, file = NULL, sep = ";", ...){
+print.multi.quali <- function (x, file = NULL, sep = ";", ...){
+  x<-res.mca
+  #Test of the class of x
   if (!inherits(res.mca, "ACM_val")) stop("non convenient data")
   cat("**Results Mutltivarial Analysis using PCA**\n")
   cat("*The results are available in the following objects:\n\n")
+  
+  #Description of the results
   res <- array("", c(24, 2), list(1:24, c("name", "description")))
   res[1, ] <- c("eig.values", "eigenvalues")
   res[2, ] <- c("$var.tab", "results for the variables")
   res[3, ] <- c("$ind.tab", "results for the individus")
   res[4, ] <- c("$desc.dim", "description of the dimension")
-  indice <- 5
+  res[5, ]<- c("$correlation", "correlation between dimensions and clusters")
+  res[6, ]<- c("$correlation$`Conditionnal means table`", "table of conditionnaly means between clusters and dimension")
+  res[7, ]<- c("$correlation$`Correlation coefficients table`", "table of correlation between dimensions and clusters")
+  indice <- 8
   if (!is.null(res.mca$quanti.sup)){
     res[indice, ] <- c("$quanti.supp", "results for the supplementary numerical variables")
   }
   print(res[1:indice,])
+  
+  #Write results in a file
   if (!is.null(file)) {
     write.infile(res.mca,file = file, sep=sep)
     print(paste("All the results are in the file",file))
