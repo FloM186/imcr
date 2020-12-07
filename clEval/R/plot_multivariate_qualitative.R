@@ -5,7 +5,7 @@
 #' @param clusters clusters of the data
 #' @param axes choice of dimensions
 #' @param sup boolean which indicates presence of supplementary variable
-#' @param cramer v.creamer of the variable with clusters
+#' @param cramer cramer's v of the variable with clusters
 #' @param ... further arguments of print method
 #'
 #' @return graphics for the multivariate qualitative analysis
@@ -23,7 +23,7 @@ plot.multi.quali<-function(x,clusters=FALSE, cramer=FALSE,sup=FALSE,axes=c(1,2),
 
   #Graph of the qualitatives variables and individuals by class
   ind<-rbind(res.mca$ind$coord,res.mca$var$coord)
-  grp<-append(clusters, rep("Modalités",nrow(res.mca$var$coord)))
+  grp<-append(clusters, rep("Modalities",nrow(res.mca$var$coord)))
   nom<-c(rep("",nrow(res.mca$ind$coord)),rownames(res.mca$var$coord))
   a<-ggplot(as.data.frame(ind),aes(x=ind[,axes[1]], y=ind[,axes[2]], color=grp)) +
     geom_point() +

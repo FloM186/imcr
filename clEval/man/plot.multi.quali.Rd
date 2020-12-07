@@ -11,7 +11,7 @@
 
 \item{clusters}{clusters of the data}
 
-\item{cramer}{v.creamer of the variable with clusters}
+\item{cramer}{cramer's v of the variable with clusters}
 
 \item{sup}{boolean which indicates presence of supplementary variable}
 
