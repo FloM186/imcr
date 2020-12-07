@@ -564,6 +564,7 @@ quanti_caracterisation <- function(active_variables, clusters){
 quanti_caracterisation(fromage[,-1], groupes.cah)
 
 
+
 #Function to know the differents elements of ACP_tab's object
 print.effect_size<- function (x, file = NULL, sep = ";"){
   if (!inherits(x, "effect_size")) stop("non convenient data")
@@ -590,6 +591,7 @@ print.effect_size<- function (x, file = NULL, sep = ";"){
 }
 
 effect_size(fromage[,-1], groupes.cah)
+effect_size(fromage[,-1], groupes.cah)$"Cohen's d"
   
   
   
