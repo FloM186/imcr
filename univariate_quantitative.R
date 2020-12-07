@@ -16,12 +16,14 @@ groupes.cah <- cutree(cah.ward,k=4)
 test_value(fromage[,-1], groupes.cah, show_graph = TRUE)
 corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)
 
-str(effect_size(fromage[,-1], groupes.cah))
+str()
+effect_size(fromage[,-1], groupes.cah)
 
 corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE)[2]
 
 str(effect_size(fromage[,-1], groupes.cah))
 str(corr_coef(fromage[,-1], groupes.cah, show_graph = TRUE, show_conditionnal_means = TRUE))
+
 #Function to calculate test value
 test_value <- function(active_variables, clusters, show_graph=TRUE, digits=3) {
   if(all(sapply(active_variables, is.numeric))==FALSE) { #Check if input variables are numeric
@@ -552,7 +554,15 @@ effect_size <- function(active_variables, clusters, digits=3) {
       return(results)
     }
     
-    else {}
+    else { #Returning tables
+      results <- list("Cohen's d" = es_d %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Hedge's g" = es_g %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U3 value table" = u3 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U2 value table"=  u2 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "U1 value table" = u1 %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Binomial effect size display" = besd %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)),
+                      "Common language effect size"= cles %>% as.data.frame() %>% mutate_if(is.numeric, ~round(., digits)))
+      return(results)}
   }
 }
 
