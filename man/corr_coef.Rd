@@ -24,7 +24,7 @@ corr_coef(
 \item{digits}{a number. Number of digits displayed in tables}
 }
 \value{
-The correlation coefficient and a plot with means, standard deviation and correlation coefficient for each variable and for each cluster
+The correlation coefficient table (returned in console and Viewer tab in Rstudio in html format) and a barplot with means for each variable.
 }
 \description{
 This function returns the correlation coefficient from quantitative variables and clusters
