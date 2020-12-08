@@ -1,7 +1,0 @@
-{
-    "installOptions": {
-        "installFromRepository": false,
-        "libraryPath": "C:/Users/moret/Downloads/_documents/softwares/R/R-4.0.3/library",
-        "installDependencies": true
-    }
-}
