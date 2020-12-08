@@ -16,7 +16,7 @@ test_value(active_variables, clusters, show_graph = TRUE, digits = 3)
 \item{digits}{a number. Number of digits displayed in tables}
 }
 \value{
-The test value and a plot with means, standard deviation and test value for each variable and for each cluster
+The test value table (in console and html format displayed in Viewer tab in Rstudio) and a plot with means, standard deviation and test value for each variable and for each cluster
 }
 \description{
 This function returns the test value from quantitative variables and clusters

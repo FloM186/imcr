@@ -1,5 +1,5 @@
 #' @title  Compute correlation coefficient of quantitative variables and clusters
-#' @description  This function returns the correlation coefficient from quantitative variables and clusters
+#' @description  This function returns the squared correlation coefficient from quantitative variables and clusters
 #'
 #' @param active_variables a numeric vector, data frame or matrix
 #' @param clusters a vector of same length as variables containing the clustering values
@@ -7,7 +7,7 @@
 #' @param show_conditionnal_means logical. If false, doesn't return the graph
 #' @param digits a number. Number of digits displayed in tables
 #'
-#' @return The correlation coefficient and a plot with means, standard deviation and correlation coefficient for each variable and for each cluster
+#' @return The squared correlation coefficient table (in console and html format displayed in Viewer tab in Rstudio) and a barplot with means
 #' @export
 #' @import stats RColorBrewer ggpubr ggplot2 formattable dplyr tidyr
 #' @examples

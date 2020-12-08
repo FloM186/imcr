@@ -14,7 +14,7 @@ effect_size(active_variables, clusters, digits = 3)
 \item{digits}{a number. Number of digits displayed in tables}
 }
 \value{
-The effect size and a plot with means, standard deviation and effect size for each variable and for each cluster
+The effect size (Hedge's g : es_g) as well as other indexes : Cohen's d (es_d); U3, U2 and U1 value which are calculated with Hedge's g); Binomial Effect Size Display (besd); and Common Language Effect Size (cles). These values will be returned in console as well as in html format (Viewer tab in Rstudio). When prompted, if a variable and a cluster is designated, one figure will be plotted (density of the variable, density of all clusters,density of selected cluster vs others); if no cluster is selected 1 plot per cluster vs others will be generated. If no variable is selected, no figure will be generated.
 }
 \description{
 This function returns the effect size from quantitative variables and clusters

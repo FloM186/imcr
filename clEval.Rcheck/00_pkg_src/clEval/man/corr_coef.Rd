@@ -24,10 +24,10 @@ corr_coef(
 \item{digits}{a number. Number of digits displayed in tables}
 }
 \value{
-The correlation coefficient and a plot with means, standard deviation and correlation coefficient for each variable and for each cluster
+The squared correlation coefficient table (in console and html format displayed in Viewer tab in Rstudio) and a barplot with means
 }
 \description{
-This function returns the correlation coefficient from quantitative variables and clusters
+This function returns the squared correlation coefficient from quantitative variables and clusters
 }
 \examples{
 data(iris)
