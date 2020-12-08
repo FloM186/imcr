@@ -1,8 +1,7 @@
 ################Importation package
-#Import sur github -> manip a faire ?
 install.packages("devtools")
 library("devtools")
-install_github("flom186/projetR")
+install_github("FloM186/imcr")
 
 #Library
 library(imcr)
