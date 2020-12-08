@@ -1,0 +1,474 @@
+
+R version 4.0.3 (2020-10-10) -- "Bunny-Wunnies Freak Out"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "clEval"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> options(pager = "console")
+> base::assign(".ExTimings", "clEval-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+> 
+> ### * </HEADER>
+> library('clEval')
+Warning: replacing previous import 'dplyr::filter' by 'stats::filter' when loading 'clEval'
+Warning: replacing previous import 'dplyr::lag' by 'stats::lag' when loading 'clEval'
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("bin")
+> ### * bin
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: bin
+> ### Title: Compute binomial coefficient
+> ### Aliases: bin
+> 
+> ### ** Examples
+> 
+> n=5
+> k=2
+> bin(n,k)
+[1] 10
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("bin", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("cl.profil")
+> ### * cl.profil
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: cl.profil
+> ### Title: Columns percentages of a frequency table from variables and
+> ###   clusters
+> ### Aliases: cl.profil
+> 
+> ### ** Examples
+> 
+> var = c(rep("yes",7), rep("no",7))
+> clust = c(1,1,2,1,2,3,1,2,3,3,2,1,3,2)
+> cl.profil(var,clust)
+        active_variables
+clusters     no    yes Ensemble
+   1      14.29  57.14    35.71
+   2      42.86  28.57    35.71
+   3      42.86  14.29    28.57
+   Total 100.01 100.00    99.99
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("cl.profil", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("corr_coef")
+> ### * corr_coef
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: corr_coef
+> ### Title: Compute correlation coefficient of quantitative variables and
+> ###   clusters
+> ### Aliases: corr_coef
+> 
+> ### ** Examples
+> 
+> data(iris)
+> iris.cr <- scale(iris[,-5],center=TRUE,scale=TRUE)
+> d.iris <- dist(iris.cr)
+> cah.ward <- hclust(d.iris,method="ward.D2")
+> groupes.cah <- cutree(cah.ward,k=4)
+> corr_coef(iris[,-5], groupes.cah, show_graph = TRUE, digits=3)
+$`Conditionnal means table`
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        5.016       3.451        1.465       0.245
+2        5.530       2.567        3.930       1.207
+3        6.273       2.893        4.916       1.671
+4        7.019       3.165        5.877       2.173
+
+$`Correlation coefficients table`
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1         0.79       0.577        0.938       0.916
+
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("corr_coef", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("effect_size")
+> ### * effect_size
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: effect_size
+> ### Title: Compute effect size of quantitative variables and clusters
+> ### Aliases: effect_size
+> 
+> ### ** Examples
+> 
+> data(iris)
+> iris.cr <- scale(iris[,-5],center=TRUE,scale=TRUE)
+> d.iris <- dist(iris.cr)
+> cah.ward <- hclust(d.iris,method="ward.D2")
+> groupes.cah <- cutree(cah.ward,k=4)
+> effect_size(iris[,-5], groupes.cah, digits=3)
+$`Hedge's g`
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1       -2.114       1.698       -4.630      -3.887
+2       -0.702      -1.671       -0.088      -0.204
+3        0.535      -0.396        0.725       0.662
+4        2.244       0.449        1.651       1.828
+
+What is the variable you want to inspect (displays density and normality test) ? Enter a name or skip by pressing enter: 
+$d.cohen
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1       -2.322       1.689       -5.331      -4.454
+2       -0.832      -1.814       -0.107      -0.251
+3        0.613      -0.447        0.846       0.761
+4        2.432       0.511        2.051       2.254
+
+$g.hedges
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1       -2.114       1.698       -4.630      -3.887
+2       -0.702      -1.671       -0.088      -0.204
+3        0.535      -0.396        0.725       0.662
+4        2.244       0.449        1.651       1.828
+
+$u3
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        0.017       0.955        0.000       0.000
+2        0.241       0.047        0.465       0.419
+3        0.704       0.346        0.766       0.746
+4        0.988       0.673        0.951       0.966
+
+$u2
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        0.855       0.802        0.990       0.974
+2        0.637       0.798        0.518       0.541
+3        0.606       0.578        0.641       0.630
+4        0.869       0.589        0.796       0.820
+
+$u1
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        0.830       0.753        0.990       0.973
+2        0.431       0.747        0.068       0.151
+3        0.349       0.271        0.441       0.412
+4        0.849       0.302        0.743       0.780
+
+$besd
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1       -0.335       0.519       -0.526      -0.491
+2       -0.037      -0.372        0.112       0.087
+3        0.370      -0.081        0.385       0.380
+4        0.648       0.170        0.525       0.564
+
+$cles
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        0.776       0.806        0.979       0.950
+2        0.527       0.840        0.618       0.595
+3        0.758       0.605        0.796       0.784
+4        0.958       0.596        0.936       0.951
+
+> #when prompted for variable enter :Sepal.length
+> #when prompted for variable enter :2
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("effect_size", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("evaluation")
+> ### * evaluation
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: evaluation
+> ### Title: Compute Rand index and V measure between real and predicted
+> ###   clusters
+> ### Aliases: evaluation
+> 
+> ### ** Examples
+> 
+> true_label <-as.factor(c("1","2","2","1"))
+> pred_label <-as.factor(c("1","2","1","2"))
+> evaluation(true_label,pred_label)
+$rand_index
+[1] NaN
+
+$v.measure
+[1] NaN
+
+attr(,"class")
+[1] "evaluation"
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("evaluation", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("h.value.test")
+> ### * h.value.test
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: h.value.test
+> ### Title: Effect size for proportion comparison
+> ### Aliases: h.value.test
+> 
+> ### ** Examples
+> 
+> var = c(rep("yes",7), rep("no",7))
+> clust = c(1,1,2,1,2,3,1,2,3,3,2,1,3,2)
+> h.value.test(var,clust)
+  clusters modality       h
+1        1       no -0.9833
+2        1      yes  0.9833
+3        2       no  0.3127
+4        2      yes -0.3127
+5        3       no  0.7250
+6        3      yes -0.7250
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("h.value.test", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("l.profil")
+> ### * l.profil
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: l.profil
+> ### Title: Row percentages of a frequency table from variables and clusters
+> ### Aliases: l.profil
+> 
+> ### ** Examples
+> 
+> var = c(rep("yes",7), rep("no",7))
+> clust = c(1,1,2,1,2,3,1,2,3,3,2,1,3,2)
+> l.profil(var,clust)
+          active_variables
+clusters    no yes Total
+  1         20  80   100
+  2         60  40   100
+  3         75  25   100
+  Ensemble  50  50   100
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("l.profil", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("phi.value.test")
+> ### * phi.value.test
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: phi.value.test
+> ### Title: Effect size expressed by correlation
+> ### Aliases: phi.value.test
+> 
+> ### ** Examples
+> 
+> var = c(rep("yes",7), rep("no",7))
+> clust = c(1,1,2,1,2,3,1,2,3,3,2,1,3,2)
+> phi.value.test(var,clust)
+  clusters modality     phi
+1        1       no -0.4472
+2        1      yes  0.4472
+3        2       no  0.1491
+4        2      yes -0.1491
+5        3       no  0.3162
+6        3      yes -0.3162
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("phi.value.test", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("rand")
+> ### * rand
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: rand
+> ### Title: Compute Rand index between real and predicted clusters
+> ### Aliases: rand
+> 
+> ### ** Examples
+> 
+> true_label <-as.factor(c("1","2","2","1"))
+> pred_label <-as.factor(c("1","2","1","2"))
+> rand(true_label,pred_label)
+[1] NaN
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("rand", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("test_value")
+> ### * test_value
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: test_value
+> ### Title: Compute test value of quantitative variables and clusters
+> ### Aliases: test_value
+> 
+> ### ** Examples
+> 
+> data(iris)
+> iris.cr <- scale(iris[,-5],center=TRUE,scale=TRUE)
+> d.iris <- dist(iris.cr)
+> cah.ward <- hclust(d.iris,method="ward.D2")
+> groupes.cah <- cutree(cah.ward,k=4)
+> test_value(iris[,-5], groupes.cah, show_graph = TRUE, digits=3)
+  clusters Sepal.Length Sepal.Width Petal.Length Petal.Width
+1        1       -8.491       7.679      -11.042     -10.646
+2        2       -2.309      -6.871        0.595       0.059
+3        3        4.150      -3.007        5.240       4.946
+4        4        7.937       1.386        6.709       7.140
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("test_value", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("uni.quali")
+> ### * uni.quali
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: uni.quali
+> ### Title: Constructor for qualitative univariate characterization
+> ### Aliases: uni.quali
+> 
+> ### ** Examples
+> 
+> var = c(rep("yes",7), rep("no",7))
+> clust = c(1,1,2,1,2,3,1,2,3,3,2,1,3,2)
+> uni.quali(var,clust)
+**Results Univariate Analysis for qualitative variable**
+*The results are available in the following objects:
+
+  name        description                                                      
+1 "$v.cramer" "table of Cramer's v between each variable and clusters"         
+2 "$l.profil" "row's profil for each variable"                                 
+3 "$c.profil" "column's profil for each variable"                              
+4 "$h"        "table of h value between modalities and clusters for each class"
+5 "$phi"      "table of phi value between variable and clusters"               
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("uni.quali", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("v.cramer")
+> ### * v.cramer
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: v.cramer
+> ### Title: Compute Cramer's v of qualitatives variables and clusters
+> ### Aliases: v.cramer
+> 
+> ### ** Examples
+> 
+> var = c('yes','no','yes')
+> clust = c(1,1,2)
+> v.cramer(var,clust)
+[1] 0.5
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("v.cramer", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("v.measure")
+> ### * v.measure
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: v.measure
+> ### Title: Compute V measure between real and predicted clusters
+> ### Aliases: v.measure
+> 
+> ### ** Examples
+> 
+> true_label <-as.factor(c("1","2","2","1"))
+> pred_label <-as.factor(c("1","2","1","2"))
+> v.measure(true_label,pred_label)
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("v.measure", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  3.1 0.36 5.48 NA NA 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

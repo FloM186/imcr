@@ -1,0 +1,78 @@
+* using log directory 'C:/Users/moret/Downloads/_documents/GitHub/projetR/clEval.Rcheck'
+* using R version 4.0.3 (2020-10-10)
+* using platform: x86_64-w64-mingw32 (64-bit)
+* using session charset: ISO8859-1
+* using options '--no-manual --as-cran'
+* checking for file 'clEval/DESCRIPTION' ... OK
+* this is package 'clEval' version '0.0.0.9000'
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking serialization versions ... OK
+* checking whether package 'clEval' can be installed ... WARNING
+Found the following significant warnings:
+  Warning: replacing previous import 'dplyr::filter' by 'stats::filter' when loading 'clEval'
+  Warning: replacing previous import 'dplyr::lag' by 'stats::lag' when loading 'clEval'
+See 'C:/Users/moret/Downloads/_documents/GitHub/projetR/clEval.Rcheck/00install.out' for details.
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+corr_coef: no visible binding for global variable 'key'
+corr_coef: no visible binding for global variable 'value'
+effect_size: no visible binding for global variable 'key'
+effect_size: no visible binding for global variable 'value'
+plot.uni.quali: no visible binding for global variable
+  'cramer_active_variables'
+plot.uni.quali: no visible binding for global variable 'cramer_val'
+plot.uni.quali: no visible binding for global variable
+  'active_variables'
+plot.uni.quali: no visible binding for global variable 'Freq'
+plot.uni.quali: no visible binding for global variable 'modality'
+plot.uni.quali: no visible binding for global variable 'h'
+plot.uni.quali: no visible binding for global variable 'phi'
+print.multi.quali: no visible binding for global variable 'res.mca'
+test_value: no visible binding for global variable 'key'
+test_value: no visible binding for global variable 'vt'
+test_value: no visible binding for global variable 'msd'
+test_value: no visible binding for global variable 'max1'
+test_value: no visible binding for global variable 'maxtot'
+Undefined global functions or variables:
+  Freq active_variables cramer_active_variables cramer_val h key max1
+  maxtot modality msd phi res.mca value vt
+* checking Rd files ... NOTE
+prepare_Rd: print.uni.quanti.Rd:19-21: Dropping empty section \value
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking examples ... OK
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+Status: 1 WARNING, 2 NOTEs
