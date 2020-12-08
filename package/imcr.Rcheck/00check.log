@@ -1,4 +1,4 @@
-* using log directory 'C:/Users/Kassandra/Documents/package/imcr.Rcheck'
+* using log directory 'C:/Users/Tanguy/Documents/GitHub/projetR/package/imcr.Rcheck'
 * using R version 4.0.3 (2020-10-10)
 * using platform: x86_64-w64-mingw32 (64-bit)
 * using session charset: ISO8859-1
@@ -18,7 +18,7 @@
 Found the following significant warnings:
   Warning: replacing previous import 'dplyr::filter' by 'stats::filter' when loading 'imcr'
   Warning: replacing previous import 'dplyr::lag' by 'stats::lag' when loading 'imcr'
-See 'C:/Users/Kassandra/Documents/package/imcr.Rcheck/00install.out' for details.
+See 'C:/Users/Tanguy/Documents/GitHub/projetR/package/imcr.Rcheck/00install.out' for details.
 * checking installed package size ... OK
 * checking package directory ... OK
 * checking for future file timestamps ... OK

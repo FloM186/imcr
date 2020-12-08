@@ -9,6 +9,7 @@ effect_size             Compute effect size of quantitative variables
 evaluation              Compute Rand index and V measure between real
                         and predicted clusters
 h.value.test            Effect size for proportion comparison
+imcr                    Is My Cluster Relevant ? IMCR
 l.profil                Row percentages of a frequency table from
                         variables and clusters
 multi.quali             Multivarial qualitatives variable analysis to

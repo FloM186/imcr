@@ -463,7 +463,7 @@ clusters    no yes Total
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  4.17 0.47 5.1 NA NA 
+Time elapsed:  6.16 0.7 10.56 NA NA 
 > grDevices::dev.off()
 null device 
           1 
