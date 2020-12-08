@@ -53,4 +53,6 @@ v.measure<-function(true_label,pred_label){
 
   #Calculation of the v measure
   v=2*((h*c)/(h+c))
+
+  return(v)
 }

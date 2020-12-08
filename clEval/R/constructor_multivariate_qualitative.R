@@ -14,12 +14,14 @@
 
 multi.quali<-function(active_variables, clusters,quanti.supp=NULL,axes = c(1, 2),show_graph=NULL){
   #Test of the parameters
-  if (length(active_variables) < 2){
+  if (class(active_variables) !="data.frame"&class(active_variables)!="character"){
     stop("Active_variables doesn't contain enough variables")
+  }else{
+    if (length(clusters)!=nrow(active_variables)){
+      stop("active_variables and y doesn't have the same length")
+    }
   }
-  if (length(clusters)!=nrow(active_variables)){
-    stop("active_variables and y doesn't have the same length")
-  }
+
   if(!is.null(quanti.supp)){
     test<-active_variables[,-quanti.supp]
   }else{

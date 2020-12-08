@@ -12,11 +12,12 @@
 #' @import FactoMineR ggplot2 factoextra RColorBrewer formattable
 
 multi.quanti<-function(active_variables, clusters,quali.supp=NULL,show_graph=NULL,axes=c(1,2)){
-  if (length(active_variables) < 2){
-    stop("active_variables doesn't contain enough variables")
-  }
-  if (length(clusters)!=nrow(active_variables)){
-    stop("active_variables and y doesn't have the same length")
+  if (class(active_variables) !="data.frame"&class(active_variables)!="numeric"){
+    stop("Active_variables doesn't contain enough variables")
+  }else{
+    if (length(clusters)!=nrow(active_variables)){
+      stop("active_variables and y doesn't have the same length")
+    }
   }
   test<-active_variables[,-quali.supp]
   if(all(sapply(test, is.numeric))==FALSE){
