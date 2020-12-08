@@ -11,9 +11,9 @@ library(imcr)
 ?imcr
 
 ################ Analyse univari?e qualitative avec le dataset auto
-data = read.delim("http://eric.univ-lyon2.fr/~ricco/tanagra/fichiers/autos_caracterisation.txt", header=T,sep = "\t")
+data = read.delim("~/GitHub/ProjetR/package/tutorial/data/autos_caracterisation.txt", header=T,sep = "\t")
 data = data[,-1]
-data2 = data2[,-c(8:11)]
+data2 = data[,-c(8:11)]
 data2 = scale(data2,center=T,scale=T)
 d = dist(data2)
 cah = hclust(d, method="ward.D2")
@@ -70,11 +70,11 @@ res$effect_size$d.cohen
 
 #Gestion of error
 res<-uni.quanti(sapply(iris[,-5], as.character),groupes.cah)
-#Eror because it doesn't work with qualitatives variables
+#Error because it doesn't work with qualitatives variables
 
-################ Analyse multivari? quantitative avec le dataset villes universitaire
+################ Analyse multivarie quantitative avec le dataset villes universitaire
 #Import dataset villes universitaires
-villes_universitaires<-read.csv2("D:/M2-SISE/Prog_Stat_R/PROJET/tutorial/data/Villes universitaires.csv",header=TRUE,row.names="Villes")
+villes_universitaires<-read.csv2("~/GitHub/ProjetR/package/tutorial/data/Villes universitaires.csv",header=TRUE,row.names="Villes")
 
 #Realisation of a CAH on the data
 d.active<-villes_universitaires[,1:9]
@@ -108,9 +108,9 @@ d.active<-villes_universitaires[,1:9]
 res<-multi.quanti(d.active,groupes.cah,10,show_graph=TRUE)
 #Error because there is no 10th variable
 
-################ Analyse multivari? qualitative avec le dataset careval
+################ Analyse multivarie qualitative avec le dataset careval
 #Import dataset careval
-careval<-read.csv("D:/M2-SISE/Python/data/careval.csv",header=FALSE)
+careval<-read.csv("~/GitHub/ProjetR/package/tutorial/data/careval.csv",header=FALSE)
 
 #Function multi.quali
 d.active<-careval[,1:6]
