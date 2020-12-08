@@ -6,7 +6,7 @@
 #' @param show_graph logical. If FALSE, doesn't return the graph
 #' @param digits a number. Number of digits displayed in tables
 #'
-#' @return The test value and a plot with means, standard deviation and test value for each variable and for each cluster
+#' @return The test value table (returned in console and Viewer tab in Rstudio in html format) and a barplot with means, standard deviation and lines for test value for each variable and for each cluster.
 #' @export
 #' @import stats RColorBrewer ggpubr ggplot2 formattable dplyr tidyr
 #' @examples

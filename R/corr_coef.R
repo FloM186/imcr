@@ -7,7 +7,7 @@
 #' @param show_conditionnal_means logical. If false, doesn't return the graph
 #' @param digits a number. Number of digits displayed in tables
 #'
-#' @return The correlation coefficient and a plot with means, standard deviation and correlation coefficient for each variable and for each cluster
+#' @return The correlation coefficient table (returned in console and Viewer tab in Rstudio in html format) and a barplot with means for each variable.
 #' @export
 #' @import stats RColorBrewer ggpubr ggplot2 formattable dplyr tidyr
 #' @examples
